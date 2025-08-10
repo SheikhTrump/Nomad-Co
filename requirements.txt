@@ -6,9 +6,3 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
 Werkzeug==3.1.3
-
-# Database driver for MongoDB
-pymongo[srv]==4.8.0
-
-# Utility for loading environment variables
-python-dotenv==1.0.1
