@@ -1,0 +1,184 @@
+<!-- templates/signup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traveler Sign Up - NomadNest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            /* Using a subtle gradient from your new palette */
+            background-color: #fdf5c9;
+            background-image: linear-gradient(to bottom right, #fdf5c9, #c2f2d0);
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            /* Using the dark brown for text */
+            color: #6b3e26;
+            max-width: 800px;
+            border-radius: 0.75rem;
+        }
+        /* ADDED: Explicit style for form labels to ensure visibility */
+        .form-label {
+            font-weight: 500;
+            color: #6b3e26;
+        }
+        .form-control, .form-select {
+            background-color: rgba(253, 245, 201, 0.5); /* Light yellow transparent */
+            border-color: #ffcb85;
+            color: #6b3e26;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(253, 245, 201, 0.7);
+            /* Using the pink for the focus color */
+            border-color: #ffc5d9;
+            color: #6b3e26;
+            box-shadow: 0 0 0 0.25rem rgba(255, 197, 217, 0.3);
+        }
+        .btn-primary {
+            /* Using the peach/orange as the primary button color */
+            background-color: #ffcb85;
+            border-color: #ffcb85;
+            color: #6b3e26; /* Dark text for contrast */
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background-color: #ffc5d9;
+            border-color: #ffc5d9;
+            color: #6b3e26;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        a {
+            /* Using the peach/orange for links */
+            color: #ffcb85;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            color: #ffc5d9;
+        }
+        .btn-outline-secondary {
+            border-color: #ffcb85;
+        }
+        .text-primary {
+             color: #ffcb85 !important;
+        }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100 p-3">
+    <div class="card p-4 shadow-lg">
+        <div class="text-center mb-4">
+            <i class="fas fa-user-plus fa-2x text-primary"></i>
+            <h2 class="fw-bold mt-2">Create Your Profile</h2>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('auth.signup') }}" method="post">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="first_name" class="form-label">First Name</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="last_name" class="form-label">Last Name</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="dob" class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" id="dob" name="dob" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="age" class="form-label">Age</label>
+                    <input type="number" class="form-control" id="age" name="age" required readonly>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="nid" class="form-label">NID Number</label>
+                <input type="text" class="form-control" id="nid" name="nid" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="phone" name="phone" required>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('password', this)">
+                            <i class="fas fa-eye text-secondary"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirm_password', this)">
+                            <i class="fas fa-eye text-secondary"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Sign Up</button>
+            </div>
+        </form>
+        <p class="text-center mt-3">Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('dob').addEventListener('change', function() {
+            const dob = new Date(this.value);
+            if (isNaN(dob)) {
+                document.getElementById('age').value = '';
+                return;
+            }
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDifference = today.getMonth() - dob.getMonth();
+            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            document.getElementById('age').value = age >= 0 ? age : 0;
+        });
+
+        function togglePasswordVisibility(fieldId, button) {
+            const passwordField = document.getElementById(fieldId);
+            const icon = button.querySelector('i');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>
