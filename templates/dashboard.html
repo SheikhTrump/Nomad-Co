@@ -1,4 +1,4 @@
-<!--I modified Nishat's initial dashboard to link my profile view-->
+<!--Modifyable over need-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,84 +6,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - NomadNest</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!--Font Awesome for Icons-->
+    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         body {
-            /*Using the darkest teal for the background*/
-            background-color: #0c5461;
-            color: #a9ffe5;
+            /* Using a subtle gradient from your new palette */
+            background-color: #fdf5c9;
+            background-image: linear-gradient(to bottom right, #fdf5c9, #c2f2d0);
+            color: #6b3e26;
         }
         .navbar {
-            background-color: rgba(12, 84, 97, 0.8);
+            background-color: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid #237e73;
         }
         .navbar-brand {
-            color: #ffffff !important;
+            color: #6b3e26 !important;
         }
         .welcome-banner {
-            background-color: #1f2937; /*Using the neutral dark slate for contrast*/
-            border: 1px solid #374151;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 0.75rem;
         }
         .dropdown-menu {
-            background-color: #1f2937;
-            border: 1px solid #374151;
+            background-color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
         .dropdown-item {
-            color: #d1d5db;
+            color: #6b3e26;
         }
         .dropdown-item:hover {
-            background-color: #374151;
-            color: #46e0c1;
+            background-color: #fdf5c9;
+        }
+        .btn-primary {
+            background-color: #ffcb85;
+            border-color: #ffcb85;
+            color: #6b3e26;
+        }
+        .btn-primary:hover {
+            background-color: #ffc5d9;
+            border-color: #ffc5d9;
         }
         .nav-link {
-            color: #ffffff !important;
+            color: #6b3e26 !important;
         }
     </style>
 </head>
 <body>
-    <!--Eita hocche oporer navigation bar-->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand fw-bold" href="#">
                 NomadNest
             </a>
-            <!--User er jonno dropdown menu-->
             <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user-circle me-1"></i> Welcome, {{ session.first_name }}
                 </a>
-                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
-                    <!--Ekhane "My Profile" page er link deya ache-->
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item" href="{{ url_for('traveler_profiles.view_traveler_profile') }}"><i class="fas fa-user-edit me-2"></i>My Profile</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <!--Ekhane logout er link deya ache-->
                     <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                 </ul>
             </div>
         </div>
     </nav>
-
-    <!--Page er main content ekhane-->
     <div class="container mt-5">
-        <!--Login korar por ei welcome banner ta dekhabe-->
         <div class="p-5 text-center welcome-banner">
-            <!--Ekhane check kora hocche user kon role e login korche-->
             {% if session.role == 'admin' %}
-                <h1 class="display-5 fw-bold text-white">Admin Dashboard</h1>
+                <h1 class="display-5 fw-bold">Admin Dashboard</h1>
             {% elif session.role == 'host' %}
-                <h1 class="display-5 fw-bold text-white">Host Dashboard</h1>
+                <h1 class="display-5 fw-bold">Host Dashboard</h1>
             {% elif session.role == 'traveler' %}
-                <!--Jodi traveler hoy, tahole ei message dekhabe-->
-                <h1 class="display-5 fw-bold text-white">Welcome, {{ session.first_name }}!</h1>
-                <p class="fs-5" style="color: #a9ffe5;">Your User ID is: <strong>{{ session.user_id }}</strong></p>
+                <h1 class="display-5 fw-bold">Welcome, {{ session.first_name }}!</h1>
+                <p class="fs-5" style="color: #6b3e26;">Your User ID is: <strong>{{ session.user_id }}</strong></p>
             {% endif %}
         </div>
-        <!--Onnanno role er jonno dashboard content ekhane add kora jabe-->
+        <!-- Dashboard content for different roles will go here -->
     </div>
-    <!--Dropdown menu kaj koranor jonno Bootstrap er JavaScript file-->
+    <!-- Required Bootstrap JS for dropdown functionality -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
