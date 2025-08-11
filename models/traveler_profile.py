@@ -1,41 +1,51 @@
+#models/traveler_profile.py
+
 import os
 from pymongo import MongoClient
 
-#MongoDB connection setup kortesi
+#Database Connection
 try:
-    mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/nomadnest')  #MongoDB URI set korlam
-    client = MongoClient(mongo_uri)  #Client create hocche
-    db = client.get_database('nomadnest')  #Database select hobe er maddhome
-    users_collection = db.users  #Users collection select er jonne
+    mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/nomadnest')
+    client = MongoClient(mongo_uri)
+    db = client.get_database('nomadnest')
+    #Amra ekhane users collection er jonno nijeder reference toiri korchi.
+    users_collection = db.users
     print("Traveler Profile Model: MongoDB connected successfully.")
 except Exception as e:
     print(f"Traveler Profile Model: Error connecting to MongoDB: {e}")
 
-#User er pura profile fetch korar function
+
 def get_user_profile(user_id):
+    """
+    User er unique nomad ID diye tar shob profile data fetch kore.
+    Ei function ta ekhon ei file er moddhei ache.
+    """
     return users_collection.find_one({"user_id": user_id})
 
-#User profile update korar function
+
 def update_traveler_profile_info(user_id, data, new_profile_pic_path=None):
-    #Update er jonno specific fields ready kora
+    """
+    Traveler profile page theke je field gulo update kora hoy, shegulo handle kore.
+    """
     update_data = {
         'first_name': data.get('first_name'),
         'last_name': data.get('last_name'),
-        'email': data.get('email'),
         'bio': data.get('bio'),
-        'max_budget': int(data.get('max_budget', 1000)),  #Default 1000
-        'min_wifi_speed': int(data.get('min_wifi_speed', 25)),  #Default 25
+        'max_budget': int(data.get('max_budget', 1000)),
+        'min_wifi_speed': int(data.get('min_wifi_speed', 25)),
+        #FIXED: 'looking_for' field ta ekhane add kora hoyeche jate update hoy
+        'looking_for': data.get('looking_for', '')
     }
 
-    #Jodi new profile picture path thake tahole add kora
+    #Shudhu notun profile picture upload dilei URL ta update hobe
     if new_profile_pic_path:
         update_data['profile_picture_url'] = new_profile_pic_path
 
-    #MongoDB te $set diye only given fields update kora
+    #MongoDB te '$set' operator use kore shudhu nirdishto field gulo update kora hocche
     users_collection.update_one(
         {'user_id': user_id},
         {'$set': update_data}
     )
 
-    #Update confirm korar jonno updated profile return kora
+    #Change confirm korar jonno updated profile ta return kora hocche.
     return get_user_profile(user_id)
