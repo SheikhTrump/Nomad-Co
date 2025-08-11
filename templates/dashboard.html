@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 <!--Modifyable over need-->
+=======
+<!-- templates/dashboard.html -->
+>>>>>>> origin/bipresh-space-features
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -78,6 +82,17 @@
             {% elif session.role == 'traveler' %}
                 <h1 class="display-5 fw-bold">Welcome, {{ session.first_name }}!</h1>
                 <p class="fs-5" style="color: #6b3e26;">Your User ID is: <strong>{{ session.user_id }}</strong></p>
+<<<<<<< HEAD
+=======
+                
+                <!-- NEW: Button to link to your Filter Spaces feature -->
+                <div class="mt-4">
+                    <a href="{{ url_for('space_filters.view_spaces') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search-location me-2"></i> Find a Space
+                    </a>
+                </div>
+
+>>>>>>> origin/bipresh-space-features
             {% endif %}
         </div>
         <!-- Dashboard content for different roles will go here -->
