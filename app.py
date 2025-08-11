@@ -9,6 +9,7 @@ from routes.traveler_profiles import traveler_profiles_bp
 from routes.space_filters import space_filters_bp
 from routes.reviews import reviews_bp
 from routes.api import api_bp
+from routes.space import space_bp
 
 load_dotenv()
 
@@ -24,6 +25,7 @@ def create_app():
         app.register_blueprint(space_filters_bp)
         app.register_blueprint(reviews_bp)
         app.register_blueprint(api_bp)
+        app.register_blueprint(space_bp)
 
     @app.route('/')
     def index():
