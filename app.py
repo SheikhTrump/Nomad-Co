@@ -14,11 +14,12 @@ from routes.space import space_bp
 load_dotenv()
 
 def create_app():
-
     app = Flask(__name__)
 
+    # --- Configuration ---
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'a-default-secret-key')
 
+    # --- Register Blueprints ---
     with app.app_context():
         app.register_blueprint(auth_bp)
         app.register_blueprint(traveler_profiles_bp)
@@ -27,6 +28,7 @@ def create_app():
         app.register_blueprint(api_bp)
         app.register_blueprint(space_bp)
 
+    # --- Homepage Route ---
     @app.route('/')
     def index():
         if 'user_id' in session:
@@ -35,7 +37,7 @@ def create_app():
 
     return app
 
-
+# --- Main execution block ---
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
