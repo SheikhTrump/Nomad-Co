@@ -1,7 +1,6 @@
 <!-- templates/dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,52 +15,51 @@
             background-image: linear-gradient(to bottom right, #fdf5c9, #c2f2d0);
             color: #6b3e26;
         }
-
         .navbar {
             background-color: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
         }
-
         .navbar-brand {
             color: #6b3e26 !important;
         }
-
         .welcome-banner {
             background-color: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 0.75rem;
         }
-
         .dropdown-menu {
             background-color: #ffffff;
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
-
         .dropdown-item {
             color: #6b3e26;
         }
-
         .dropdown-item:hover {
             background-color: #fdf5c9;
         }
-
         .btn-primary {
             background-color: #ffcb85;
             border-color: #ffcb85;
             color: #6b3e26;
         }
-
         .btn-primary:hover {
             background-color: #ffc5d9;
             border-color: #ffc5d9;
         }
-
+        .btn-secondary {
+            background-color: #e2e8f0;
+            border-color: #e2e8f0;
+            color: #475569;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e1;
+            border-color: #cbd5e1;
+        }
         .nav-link {
             color: #6b3e26 !important;
         }
     </style>
 </head>
-
 <body>
     <nav class="navbar navbar-expand-lg">
         <div class="container">
@@ -74,11 +72,21 @@
                     <i class="fas fa-user-circle me-1"></i> Welcome, {{ session.first_name }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
+                    <!-- UPDATED: Logic to show the correct profile link for each role -->
+                    {% if session.role == 'traveler' %}
                     <li><a class="dropdown-item" href="{{ url_for('traveler_profiles.view_traveler_profile') }}"><i
                                 class="fas fa-user-edit me-2"></i>My Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
+                    {% elif session.role == 'host' %}
+                    <!-- This link will point to Mahibi's new host profile page -->
+                    <li><a class="dropdown-item" href="#"><i
+                                class="fas fa-store me-2"></i>My Host Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    {% endif %}
                     <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i
                                 class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                 </ul>
@@ -89,26 +97,24 @@
         <div class="p-5 text-center welcome-banner">
             {% if session.role == 'admin' %}
             <h1 class="display-5 fw-bold">Admin Dashboard</h1>
+
             {% elif session.role == 'host' %}
             <h1 class="display-5 fw-bold">Host Dashboard</h1>
             <p class="fs-5" style="color: #6b3e26;">Welcome, {{ session.first_name }}! Manage your listings here.</p>
-
+            <!-- Mahibi's Buttons for Host -->
             <div class="mt-4 d-flex gap-3 justify-content-center">
-                <!-- Create a New Space -->
                 <a href="{{ url_for('space_bp.create_space') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-plus-circle me-2"></i> Create a Space
                 </a>
-
-                <!-- View/Manage My Spaces -->
                 <a href="{{ url_for('space_bp.get_spaces_route') }}" class="btn btn-secondary btn-lg">
                     <i class="fas fa-home me-2"></i> My Spaces
                 </a>
             </div>
+
             {% elif session.role == 'traveler' %}
             <h1 class="display-5 fw-bold">Welcome, {{ session.first_name }}!</h1>
             <p class="fs-5" style="color: #6b3e26;">Your User ID is: <strong>{{ session.user_id }}</strong></p>
-
-            <!-- NEW: Button to link to your Filter Spaces feature -->
+            <!-- Nishat's Button for Traveler -->
             <div class="mt-4">
                 <a href="{{ url_for('space_filters.view_spaces') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-search-location me-2"></i> Find a Space
