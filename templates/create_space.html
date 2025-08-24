@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Space</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Maps JavaScript API (replace YOUR_API_KEY with your real key) -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+
+    <style>
+        #map {
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="max-w-3xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6">Create a New Space</h1>
+
+        <form action="/create_space" method="POST" enctype="multipart/form-data" class="space-y-4">
+
+            <!-- Basic Info -->
+            <div>
+                <label class="block font-semibold">Full Name</label>
+                <input type="text" name="name" required class="w-full border rounded p-2">
+            </div>
+
+            <div>
+                <label class="block font-semibold">Email</label>
+                <input type="email" name="email" required class="w-full border rounded p-2">
+            </div>
+
+            <div>
+                <label class="block font-semibold">Phone Number</label>
+                <input type="text" name="phone" class="w-full border rounded p-2">
+            </div>
+
+            <!-- Space Info -->
+            <div>
+                <label class="block font-semibold">Space Title</label>
+                <input type="text" name="space_title" required class="w-full border rounded p-2">
+            </div>
+
+            <div>
+                <label class="block font-semibold">Description</label>
+                <textarea name="description" rows="4" class="w-full border rounded p-2"></textarea>
+            </div>
+
+            <div>
+                <label class="block font-semibold">Price per Night (USD)</label>
+                <input type="number" step="0.01" name="price_per_night" required class="w-full border rounded p-2">
+            </div>
+
+            <!-- Amenities -->
+            <div>
+                <label class="block font-semibold">Amenities (select multiple)</label>
+                <select name="amenities" multiple class="w-full border rounded p-2">
+                    <option value="WiFi">WiFi</option>
+                    <option value="Kitchen">Kitchen</option>
+                    <option value="Air Conditioning">Air Conditioning</option>
+                    <option value="Parking">Parking</option>
+                    <option value="Washer">Washer</option>
+                    <option value="Pool">Pool</option>
+                </select>
+                <p class="text-gray-500 text-sm">Hold CTRL (Windows) or CMD (Mac) to select multiple</p>
+            </div>
+
+            <!-- Google Map -->
+            <div>
+                <label class="block font-semibold">Select Location</label>
+                <div id="map"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold">Latitude</label>
+                    <input type="number" step="any" name="latitude" id="latitude" required class="w-full border rounded p-2">
+                </div>
+                <div>
+                    <label class="block font-semibold">Longitude</label>
+                    <input type="number" step="any" name="longitude" id="longitude" required class="w-full border rounded p-2">
+                </div>
+            </div>
+
+            <!-- Photos -->
+            <div>
+                <label class="block font-semibold">Upload Photos</label>
+                <input type="file" name="photos" multiple class="w-full border rounded p-2">
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Create Listing
+            </button>
+        </form>
+    </div>
+
+    <script>
+        function initMap() {
+            let defaultLocation = { lat: 23.8103, lng: 90.4125 }; // Default: Dhaka
+            let map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 12,
+                center: defaultLocation
+            });
+
+            let marker = new google.maps.Marker({
+                position: defaultLocation,
+                map: map,
+                draggable: true
+            });
+
+            // Update lat/lng fields when marker is moved
+            google.maps.event.addListener(marker, 'dragend', function(event) {
+                document.getElementById("latitude").value = event.latLng.lat();
+                document.getElementById("longitude").value = event.latLng.lng();
+            });
+
+            // Update marker & fields when map is clicked
+            google.maps.event.addListener(map, 'click', function(event) {
+                marker.setPosition(event.latLng);
+                document.getElementById("latitude").value = event.latLng.lat();
+                document.getElementById("longitude").value = event.latLng.lng();
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+
+</body>
+</html>

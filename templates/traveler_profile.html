@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - NomadNest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!--Cropper.js for image cropping-->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            /*FINAL PALETTE: Using the darkest teal for the background*/
+            background-color: #0c5461; 
+            color: #d1d5db;
+        }
+        .navbar {
+            background-color: rgba(12, 84, 97, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #237e73; /*A slightly lighter teal for separation*/
+        }
+        .navbar-brand, .nav-link {
+            color: #ffffff !important; 
+        }
+        .card, .modal-container {
+            /*Using a neutral dark slate for cards to create depth*/
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 1rem;
+        }
+        .profile-pic {
+            /*FINAL PALETTE: Using the vibrant turquoise accent*/
+            border-color: #46e0c1;
+        }
+        .info-panel-header {
+            border-bottom-color: #374151;
+        }
+        .btn-primary {
+            /*FINAL PALETTE: Using the vibrant turquoise accent*/
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+            color: #111827;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            /*FINAL PALETTE: Using the light aquamarine for hover*/
+            background-color: #a9ffe5;
+            border-color: #a9ffe5;
+        }
+        .form-control, .form-select {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #4b5563;
+            border-color: #46e0c1;
+            box-shadow: 0 0 0 0.25rem rgba(70, 224, 193, 0.25);
+        }
+        /* Style for readonly fields */
+        .form-control:read-only {
+            background-color: #4b5563;
+            opacity: 0.7;
+        }
+        .modal-overlay {
+            background-color: rgba(12, 84, 97, 0.8);
+        }
+        .file-input-label {
+            cursor: pointer; 
+        }
+        .img-container {
+            max-height: 400px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!--Eita hocche oporer navigation bar-->
+    <nav class="navbar sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-2xl font-bold">NomadNest</h1>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-gray-400 mr-4">Welcome, {{ profile.first_name }}!</span>
+                    <a href="{{ url_for('auth.dashboard') }}" class="py-2 px-4 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!--Ekhane page er main content thakbe-->
+    <div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <!--Kono success ba error message dekhale ei section e ashbe-->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="mb-4 rounded-md p-4 {{ 'bg-teal-900/50 text-teal-300 border border-teal-700' if category == 'success' else 'bg-red-900/50 text-red-300 border border-red-700' }}">
+                <p>{{ message }}</p>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!--Bam pasher column, ekhane profile card ache-->
+            <div class="lg-col-span-1">
+                <!--Profile er chobi, naam, user ID, ebong bio-->
+                <div class="card p-6 text-center">
+                    <img class="w-32 h-32 rounded-full mx-auto mb-4 border-4 profile-pic object-cover" src="{{ profile.profile_picture_url }}" alt="Profile Picture" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ profile.first_name }}+{{ profile.last_name }}&background=46e0c1&color=111827';">
+                    <h2 class="text-2xl font-bold text-white">{{ profile.first_name }} {{ profile.last_name }}</h2>
+                    <p class="font-semibold" style="color: #a9ffe5;">{{ profile.user_id }}</p>
+                    <p class="text-gray-400 mt-4">{{ profile.bio }}</p>
+                    <button onclick="toggleModal('edit-profile-modal')" class="mt-6 w-full py-3 px-4 btn-primary rounded-md transition">Edit Profile</button>
+                </div>
+                <!--Budget ebong WiFi speed er jonno preferences card-->
+                <div class="card p-6 mt-8">
+                    <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">My Preferences</h3>
+                    <div class="space-y-4 mt-4">
+                        <div class="flex justify-between items-center">
+                            <p class="text-gray-400">Max Budget</p>
+                            <p class="font-semibold text-white">৳{{ profile.max_budget }}/month</p>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <p class="text-gray-400">Min WiFi Speed</p>
+                            <p class="font-semibold text-white">{{ profile.min_wifi_speed }} Mbps</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Dan pasher column, ekhane baki details thakbe-->
+            <div class="lg:col-span-2 space-y-8">
+                <!--User er personal information er section-->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">My Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Full Name</p>
+                            <p class="font-semibold text-gray-300">{{ profile.first_name }} {{ profile.last_name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Email</p>
+                            <p class="font-semibold text-gray-300">{{ profile.email }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Phone</p>
+                            <p class="font-semibold text-gray-300">{{ profile.phone }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">NID Number</p>
+                            <p class="font-semibold text-gray-300">**********{{ profile.nid[-4:] }} <i class="fas fa-lock text-gray-500 ml-1"></i></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Date of Birth</p>
+                            <p class="font-semibold text-gray-300">{{ profile.dob }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!--User er current travel plan gulo ekhane dekhabe-->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">Current Travel Plans</h3>
+                    <p class="text-gray-400 mt-4">{{ profile.looking_for or 'Not specified yet.' }}</p>
+                </div>
+
+                <!--Ei section ta remove kora hoyeche-->
+
+            </div>
+        </div>
+    </div>
+
+    <!--Profile edit korar jonno ei modal/popup ta show korbe-->
+    <div class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center" id="edit-profile-modal">
+        <div class="modal-overlay absolute w-full h-full" onclick="toggleModal('edit-profile-modal')"></div>
+        <div class="modal-container w-11/12 md:max-w-4xl mx-auto z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <!--Modal er Title-->
+                <div class="flex justify-between items-center pb-3 border-b info-panel-header">
+                    <p class="text-2xl font-bold text-white">Edit Your Profile</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="toggleModal('edit-profile-modal')">
+                        <i class="fas fa-times text-gray-500 hover:text-white"></i>
+                    </div>
+                </div>
+                <!--Modal er Body ebong Form-->
+                <form id="profile-edit-form" action="{{ url_for('traveler_profiles.update_profile') }}" method="POST" enctype="multipart/form-data" class="mt-4 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!--Form er bam pasher ongsho-->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="first_name" class="block text-sm font-medium text-gray-400">First Name</label>
+                                <input type="text" name="first_name" value="{{ profile.first_name }}" class="mt-1 block w-full rounded-md form-control">
+                            </div>
+                            <div>
+                                <label for="last_name" class="block text-sm font-medium text-gray-400">Last Name</label>
+                                <input type="text" name="last_name" value="{{ profile.last_name }}" class="mt-1 block w-full rounded-md form-control">
+                            </div>
+                            <div>
+                                <label for="bio" class="block text-sm font-medium text-gray-400">Your Bio</label>
+                                <textarea name="bio" rows="4" class="mt-1 block w-full rounded-md form-control">{{ profile.bio }}</textarea>
+                            </div>
+                            <div>
+                                <label for="max_budget" class="block text-sm font-medium text-gray-400">Max Budget (BDT/month)</label>
+                                <input type="number" name="max_budget" value="{{ profile.max_budget }}" class="mt-1 block w-full rounded-md form-control">
+                            </div>
+                            <div>
+                                <label for="min_wifi_speed" class="block text-sm font-medium text-gray-400">Min WiFi Speed (Mbps)</label>
+                                <input type="number" name="min_wifi_speed" value="{{ profile.min_wifi_speed }}" class="mt-1 block w-full rounded-md form-control">
+                            </div>
+                        </div>
+                        <!--Form er dan pasher ongsho, chobi crop korar jonno-->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Profile Picture</label>
+                            <label class="file-input-label mt-1 inline-block py-2 px-4 bg-gray-600 text-gray-200 rounded-md hover:bg-gray-500 transition">
+                                <span>Choose File</span>
+                                <input type="file" id="profile_picture_input" name="profile_picture_source" class="hidden" accept="image/*">
+                            </label>
+                            <div class="img-container hidden bg-gray-800 p-2 rounded-md">
+                                <img id="image-to-crop" src="">
+                            </div>
+                        </div>
+                    </div>
+                    <!--Current travel plans er jonno text area-->
+                    <div class="pt-4 border-t info-panel-header">
+                         <div>
+                            <label for="looking_for" class="block text-sm font-medium text-gray-400">Current Travel Plans</label>
+                            <textarea name="looking_for" rows="3" class="mt-1 block w-full rounded-md form-control" placeholder="e.g., A quiet space in Dhaka for 3 months...">{{ profile.looking_for }}</textarea>
+                        </div>
+                    </div>
+                    <!--Form er footer, ekhane cancel ebong save button ache-->
+                    <div class="flex justify-end pt-4 border-t info-panel-header mt-4">
+                        <button type="button" onclick="toggleModal('edit-profile-modal')" class="px-4 bg-transparent p-3 rounded-lg text-gray-400 hover:bg-gray-700 mr-2 transition">Cancel</button>
+                        <button type="submit" class="px-4 btn-primary p-3 rounded-lg transition">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!--Ekhane JavaScript code shuru-->
+    <script>
+        const editModal = document.getElementById('edit-profile-modal');
+        const imageToCrop = document.getElementById('image-to-crop');
+        const profilePictureInput = document.getElementById('profile_picture_input');
+        const imgContainer = document.querySelector('.img-container');
+        const editForm = document.getElementById('profile-edit-form');
+        let cropper;
+
+        //Modal/Popup open/close korar function
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            document.body.classList.toggle('modal-active');
+            if (modalId === 'edit-profile-modal' && cropper) {
+                cropper.destroy();
+                imgContainer.classList.add('hidden');
+            }
+        }
+
+        //Chobi select korle cropper initialize korar code
+        profilePictureInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                imageToCrop.src = event.target.result;
+                imgContainer.classList.remove('hidden');
+                
+                if (cropper) cropper.destroy();
+
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    background: false,
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        //Form submit korar por data server e pathanor code
+        editForm.addEventListener('submit', (e) => {
+            e.preventDefault(); 
+            const formData = new FormData(editForm);
+
+            if (cropper && profilePictureInput.files.length > 0) {
+                cropper.getCroppedCanvas({
+                    width: 400,
+                    height: 400,
+                }).toBlob((blob) => {
+                    formData.append('profile_picture', blob, profilePictureInput.files[0].name);
+                    submitFormData(formData);
+                }, 'image/jpeg');
+            } else {
+                submitFormData(formData);
+            }
+        });
+
+        function submitFormData(formData) {
+            fetch(editForm.action, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('An error occurred. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>

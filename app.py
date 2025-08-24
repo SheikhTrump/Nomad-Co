@@ -1,15 +1,43 @@
-
 # app.py
 
-from flask import Flask
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from flask import Flask, render_template, session, redirect, url_for
+
 from routes.auth import auth_bp
+from routes.traveler_profiles import traveler_profiles_bp
+from routes.space_filters import space_filters_bp
+from routes.reviews import reviews_bp
+from routes.api import api_bp
+from routes.space import space_bp
+
 load_dotenv()
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'a-fallback-secret-key')
-app.register_blueprint(auth_bp)
+def create_app():
+    app = Flask(__name__)
 
+    # --- Configuration ---
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'a-default-secret-key')
+
+    # --- Register Blueprints ---
+    with app.app_context():
+        app.register_blueprint(auth_bp)
+        app.register_blueprint(traveler_profiles_bp)
+        app.register_blueprint(space_filters_bp)
+        app.register_blueprint(reviews_bp)
+        app.register_blueprint(api_bp)
+        app.register_blueprint(space_bp)
+
+    # --- Homepage Route ---
+    @app.route('/')
+    def index():
+        if 'user_id' in session:
+            return redirect(url_for('auth.dashboard'))
+        return redirect(url_for('auth.login'))
+
+    return app
+
+# --- Main execution block ---
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app = create_app()
+    app.run(debug=True)

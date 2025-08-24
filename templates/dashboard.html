@@ -46,6 +46,15 @@
             background-color: #ffc5d9;
             border-color: #ffc5d9;
         }
+        .btn-secondary {
+            background-color: #e2e8f0;
+            border-color: #e2e8f0;
+            color: #475569;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e1;
+            border-color: #cbd5e1;
+        }
         .nav-link {
             color: #6b3e26 !important;
         }
@@ -58,12 +67,28 @@
                 NomadNest
             </a>
             <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                    aria-expanded="false">
                     <i class="fas fa-user-circle me-1"></i> Welcome, {{ session.first_name }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <!-- REMOVED: The "My Profile" link and the divider are now gone -->
-                    <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    <!-- UPDATED: Logic to show the correct profile link for each role -->
+                    {% if session.role == 'traveler' %}
+                    <li><a class="dropdown-item" href="{{ url_for('traveler_profiles.view_traveler_profile') }}"><i
+                                class="fas fa-user-edit me-2"></i>My Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    {% elif session.role == 'host' %}
+                    <!-- This link will point to Mahibi's new host profile page -->
+                    <li><a class="dropdown-item" href="#"><i
+                                class="fas fa-store me-2"></i>My Host Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    {% endif %}
+                    <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i
+                                class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -71,12 +96,31 @@
     <div class="container mt-5">
         <div class="p-5 text-center welcome-banner">
             {% if session.role == 'admin' %}
-                <h1 class="display-5 fw-bold">Admin Dashboard</h1>
+            <h1 class="display-5 fw-bold">Admin Dashboard</h1>
+
             {% elif session.role == 'host' %}
-                <h1 class="display-5 fw-bold">Host Dashboard</h1>
+            <h1 class="display-5 fw-bold">Host Dashboard</h1>
+            <p class="fs-5" style="color: #6b3e26;">Welcome, {{ session.first_name }}! Manage your listings here.</p>
+            <!-- Mahibi's Buttons for Host -->
+            <div class="mt-4 d-flex gap-3 justify-content-center">
+                <a href="{{ url_for('space_bp.create_space') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus-circle me-2"></i> Create a Space
+                </a>
+                <a href="{{ url_for('space_bp.get_spaces_route') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-home me-2"></i> My Spaces
+                </a>
+            </div>
+
             {% elif session.role == 'traveler' %}
-                <h1 class="display-5 fw-bold">Welcome, {{ session.first_name }}!</h1>
-                <p class="fs-5" style="color: #6b3e26;">Your User ID is: <strong>{{ session.user_id }}</strong></p>
+            <h1 class="display-5 fw-bold">Welcome, {{ session.first_name }}!</h1>
+            <p class="fs-5" style="color: #6b3e26;">Your User ID is: <strong>{{ session.user_id }}</strong></p>
+            <!-- Nishat's Button for Traveler -->
+            <div class="mt-4">
+                <a href="{{ url_for('space_filters.view_spaces') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search-location me-2"></i> Find a Space
+                </a>
+            </div>
+
             {% endif %}
         </div>
         <!-- Dashboard content for different roles will go here -->
@@ -84,4 +128,5 @@
     <!-- Required Bootstrap JS for dropdown functionality -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
