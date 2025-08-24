@@ -13,7 +13,7 @@
     {% if space.photos %}
       <div class="grid grid-cols-2 gap-3 mb-6">
         {% for p in space.photos[:4] %}
-          <!-- Use url_for to serve files from ./static -->
+         
           <img src="{{ url_for('static', filename=p) }}" alt="photo" class="w-full h-48 object-cover rounded">
         {% endfor %}
       </div>
@@ -43,13 +43,45 @@
             <input type="number" name="guests" min="1" value="1" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
           </div>
 
-          <!-- Use GET to open the booking form (better UX) -->
+          
           <button type="submit" class="w-full py-2 bg-teal-500 rounded text-black font-semibold">Book</button>
         </form>
 
         <a href="{{ url_for('space_bp.list_spaces') }}" class="block mt-4 text-teal-300">Back to listings</a>
       </aside>
     </div>
+
+    <!-- Navigation Button -->
+    <a 
+      href="#" 
+      class="btn btn-primary" 
+      id="navigate-btn"
+      data-lat="{{ space.location.latitude }}" 
+      data-lng="{{ space.location.longitude }}">
+      Navigate
+    </a>
   </div>
+
+  <script>
+  document.getElementById('navigate-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      const destLat = this.getAttribute('data-lat');
+      const destLng = this.getAttribute('data-lng');
+
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+              const originLat = position.coords.latitude;
+              const originLng = position.coords.longitude;
+        
+              const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
+              window.open(url, '_blank');
+          }, function() {
+              alert('Unable to get your location.');
+          });
+      } else {
+          alert('Geolocation is not supported by your browser.');
+      }
+  });
+  </script>
 </body>
 </html>
