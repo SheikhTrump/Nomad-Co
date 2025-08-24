@@ -1,24 +1,26 @@
 # app.py
-
 import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, session, redirect, url_for
 
+# Import all blueprints
 from routes.auth import auth_bp
 from routes.traveler_profiles import traveler_profiles_bp
 from routes.space_filters import space_filters_bp
 from routes.reviews import reviews_bp
 from routes.api import api_bp
 from routes.space import space_bp
+from routes.favorites import favorites_bp # Your new blueprint
 
 load_dotenv()
 
 def create_app():
-
     app = Flask(__name__)
 
+    # --- Configuration ---
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'a-default-secret-key')
 
+    # --- Register Blueprints ---
     with app.app_context():
         app.register_blueprint(auth_bp)
         app.register_blueprint(traveler_profiles_bp)
@@ -26,7 +28,9 @@ def create_app():
         app.register_blueprint(reviews_bp)
         app.register_blueprint(api_bp)
         app.register_blueprint(space_bp)
+        app.register_blueprint(favorites_bp) # Register your new blueprint
 
+    # --- Homepage Route ---
     @app.route('/')
     def index():
         if 'user_id' in session:
@@ -35,7 +39,7 @@ def create_app():
 
     return app
 
-
+# --- Main execution block ---
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=True, port=5001) # Added port for consistency
