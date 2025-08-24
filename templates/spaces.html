@@ -1,317 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Find Your Space - NomadNest</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { 
-            font-family: 'Inter', sans-serif;
-            background-color: #0c5461; 
-            color: #d1d5db;
-        }
-        .navbar {
-            background-color: rgba(12, 84, 97, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #237e73;
-        }
-        .navbar-brand {
-            color: #ffffff !important;
-        }
-        .form-control, .form-select, .form-checkbox, .form-radio {
-            background-color: #1f2937;
-            border-color: #374151;
-            color: #d1d5db;
-        }
-        .form-control:focus, .form-select:focus, .form-checkbox:focus, .form-radio:focus {
-            background-color: #1f2937;
-            border-color: #46e0c1;
-            box-shadow: 0 0 0 0.25rem rgba(70, 224, 193, 0.25);
-            outline: none;
-        }
-        .form-checkbox:checked, .form-radio:checked {
-            background-color: #46e0c1;
-            border-color: #46e0c1;
-        }
-        .btn-primary {
-            background-color: #46e0c1;
-            border-color: #46e0c1;
-            color: #111827;
-            font-weight: bold;
-        }
-        .btn-primary:hover {
-            background-color: #a9ffe5;
-            border-color: #a9ffe5;
-        }
-        .card {
-            background-color: #1f2937;
-            border: 1px solid #374151;
-        }
-        .star-color {
-            color: #f59e0b; /* Amber color for stars */
-        }
-        .modal { transition: opacity 0.25s ease; }
-        body.modal-active { overflow-y: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #0c5461; color: #d1d5db; }
+        .navbar { background-color: rgba(12,84,97,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #237e73; }
+        .card { background-color:#1f2937; border:1px solid #374151; }
+        .btn-primary { background-color:#46e0c1; color:#111827; padding:.4rem .75rem; border-radius:.375rem; font-weight:600; }
+        .btn-primary:hover { background-color:#a9ffe5; }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div class="flex justify-between h-16">
-                <div class="flex-shrink-0 flex items-center">
-                    <h1 class="text-2xl font-bold">NomadNest</h1>
-                </div>
-                <div class="flex items-center">
-                    <a href="{{ url_for('auth.dashboard') }}" class="py-2 px-4 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition duration-300">
-                        <i class="fas fa-arrow-left mr-2"></i>Back
-                    </a>
-                </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center h-16">
+                <div class="text-2xl font-bold text-white">NomadNest</div>
             </div>
         </div>
     </nav>
-    
+
     <div class="container mx-auto px-4 py-8">
-        <!-- FIXED: Restored the full filter form -->
+        <!-- Filter area (kept minimal) -->
         <div class="bg-gray-800 p-6 rounded-lg shadow-md mb-8 border border-gray-700">
-            <form action="{{ url_for('space_filters.view_spaces') }}" method="GET">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                    <!-- Basic Filters -->
-                    <div class="space-y-4">
-                        <label for="location" class="block text-sm font-medium text-gray-400">Location</label>
-                        <input type="text" name="location" id="location" value="{{ filters.location }}" class="mt-1 block w-full rounded-md form-control" placeholder="e.g., Dhaka">
-                        <div class="flex items-center pt-6">
-                            <input type="checkbox" name="coworking" id="coworking" value="true" {% if filters.coworking %}checked{% endif %} class="h-4 w-4 rounded form-checkbox">
-                            <label for="coworking" class="ml-2 block text-sm text-gray-300">Coworking Space</label>
-                        </div>
-                    </div>
-                    
-                    <!-- Price Range Filter -->
-                    <div class="space-y-4">
-                        <label class="block text-sm font-medium text-gray-400">Price Range (BDT)</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="number" name="min_price" value="{{ filters.min_price }}" class="mt-1 block w-full rounded-md form-control" placeholder="Min">
-                            <span class="text-gray-500">-</span>
-                            <input type="number" name="max_price" value="{{ filters.max_price }}" class="mt-1 block w-full rounded-md form-control" placeholder="Max">
-                        </div>
-                    </div>
-
-                    <!-- Space Type Filter -->
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-medium text-gray-400">Space Type</h4>
-                        <div class="space-y-2 pt-1">
-                            <div class="flex items-center">
-                                <input type="radio" name="space_type" id="type_any" value="" {% if not filters.space_type %}checked{% endif %} class="h-4 w-4 form-radio">
-                                <label for="type_any" class="ml-2 block text-sm text-gray-300">Any</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" name="space_type" id="type_private" value="Private Room" {% if filters.space_type == 'Private Room' %}checked{% endif %} class="h-4 w-4 form-radio">
-                                <label for="type_private" class="ml-2 block text-sm text-gray-300">Private Room</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" name="space_type" id="type_shared" value="Shared Room" {% if filters.space_type == 'Shared Room' %}checked{% endif %} class="h-4 w-4 form-radio">
-                                <label for="type_shared" class="ml-2 block text-sm text-gray-300">Shared Room</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Amenities Filter -->
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-medium text-gray-400">Amenities</h4>
-                        <div class="space-y-2 pt-1">
-                            {% for amenity in all_amenities %}
-                            <div class="flex items-center">
-                                <input type="checkbox" name="amenities" id="amenity_{{ loop.index }}" value="{{ amenity }}" {% if amenity in filters.amenities %}checked{% endif %} class="h-4 w-4 rounded form-checkbox">
-                                <label for="amenity_{{ loop.index }}" class="ml-2 block text-sm text-gray-300">{{ amenity }}</label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    <!-- Sort By Filter -->
-                    <div class="space-y-4">
-                        <label for="sort_by" class="block text-sm font-medium text-gray-400">Sort By</label>
-                        <select name="sort_by" id="sort_by" class="mt-1 block w-full rounded-md form-select">
-                            <option value="best_match" {% if filters.sort_by == 'best_match' %}selected{% endif %}>Best Match</option>
-                            <option value="price_asc" {% if filters.sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
-                            <option value="price_desc" {% if filters.sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
-                        </select>
-                    </div>
-                </div>
-                <!-- Submit Buttons -->
-                <div class="mt-6 flex justify-end space-x-2">
-                    <a href="{{ url_for('space_filters.view_spaces') }}" class="inline-flex justify-center rounded-md border border-gray-600 bg-gray-700 py-2 px-4 text-sm font-medium text-gray-300 shadow-sm hover:bg-gray-600">
-                        Reset Filters
-                    </a>
-                    <button type="submit" class="inline-flex justify-center rounded-md border border-transparent py-2 px-4 text-sm font-medium shadow-sm btn-primary">
-                        <i class="fas fa-search mr-2"></i>Apply Filters
-                    </button>
-                </div>
+            <form action="{{ url_for('space_filters.view_spaces') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input name="location" value="{{ filters.location }}" class="form-control p-2 rounded bg-gray-900 border-gray-700" placeholder="Location">
+                <input name="min_price" value="{{ filters.min_price }}" class="form-control p-2 rounded bg-gray-900 border-gray-700" placeholder="Min price">
+                <input name="max_price" value="{{ filters.max_price }}" class="form-control p-2 rounded bg-gray-900 border-gray-700" placeholder="Max price">
+                <button type="submit" class="btn-primary">Apply</button>
             </form>
         </div>
 
-        <!-- Space Listings Grid -->
+        <!-- Grid -->
+        {% if spaces %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for space in spaces %}
-            <div class="card rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 flex flex-col cursor-pointer"
-                 onclick="openSpaceModal('{{ space._id }}')">
-                <img class="h-56 w-full object-cover" src="{{ space.image_url }}" alt="{{ space.name }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1f2937/4b5563?text=Image+Not+Available';">
-                <div class="p-6 flex flex-col flex-grow">
+            <div class="card rounded-lg shadow-lg overflow-hidden">
+                <div class="h-56 w-full bg-gray-900 flex items-center justify-center">
+                    <img class="h-full w-full object-cover" src="{{ url_for('static', filename=(space.photos[0] if space.photos else 'uploads/placeholder.png')) }}" alt="{{ space.space_title }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1f2937/4b5563?text=Image+Not+Available';">
+                </div>
+
+                <div class="p-6 flex flex-col">
                     <div class="flex justify-between items-start">
                         <div>
-                            <h3 class="text-xl font-semibold text-white">{{ space.name }}</h3>
-                            <p class="text-gray-400 mt-1"><i class="fas fa-map-marker-alt mr-2 text-gray-500"></i>{{ space.location_city }}</p>
+                            <h3 class="text-xl font-semibold text-white">{{ space.space_title or space.title or '' }}</h3>
+                            {% if space.location %}
+                                <p class="text-gray-400 mt-1 text-sm"><i class="fas fa-map-marker-alt mr-2"></i>{{ space.location.get('latitude') }} , {{ space.location.get('longitude') }}</p>
+                            {% endif %}
                         </div>
-                        <span class="text-xs font-semibold uppercase tracking-wider text-teal-200 bg-teal-800/50 px-2 py-1 rounded-full">{{ space.space_type }}</span>
-                    </div>
-                    
-                    <div class="flex items-center mt-2">
-                        {% if space.review_count > 0 %}
-                            <span class="star-color">
-                                {% for i in range(space.average_rating | int) %}
-                                    <i class="fas fa-star"></i>
-                                {% endfor %}
-                                {% if space.average_rating % 1 != 0 %}
-                                    <i class="fas fa-star-half-alt"></i>
-                                {% endif %}
-                            </span>
-                            <span class="ml-2 text-sm text-gray-400">{{ space.average_rating }} ({{ space.review_count }} reviews)</span>
-                        {% else %}
-                            <span class="text-sm text-gray-500">No reviews yet</span>
-                        {% endif %}
+                        <p class="text-lg font-bold text-teal-200">৳{{ space.price_per_night or space.price_per_month or 0 }}<span class="text-sm text-gray-400">/night</span></p>
                     </div>
 
-                    <div class="mt-4 flex flex-wrap gap-2">
+                    <p class="text-gray-300 mt-3 text-sm">{{ space.description or '' }}</p>
+
+                    <div class="mt-3 flex flex-wrap gap-2">
                         {% for amenity in space.amenities %}
                             <span class="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">{{ amenity }}</span>
                         {% endfor %}
                     </div>
 
-                    <div class="mt-auto pt-4 flex justify-between items-center">
-                        <p class="text-lg font-bold" style="color: #a9ffe5;">৳{{ space.price_per_month }}<span class="text-sm font-normal text-gray-500">/month</span></p>
-                        {% if space.has_coworking_space %}
-                            <span class="inline-flex items-center rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-300">
-                                <i class="fas fa-briefcase mr-1"></i>Coworking
-                            </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="border-t border-gray-700 pt-4 mt-4 text-center">
-                        <a href="{{ url_for('reviews.submit_review', space_id=space._id) }}" class="text-sm font-medium text-teal-400 hover:text-teal-200">
-                            Leave a Review <i class="fas fa-pen-alt ml-1"></i>
+                    <div class="mt-4 flex items-center justify-between">
+                        <a href="{{ url_for('space_bp.book_space', space_id=space['_id']) }}" class="btn-primary inline-block">Book</a>
+
+                        <a href="{{ url_for('reviews.submit_review', space_id=space['_id']) }}" class="text-sm text-teal-400 hover:text-teal-200">
+                            Leave a Review <i class="fas fa-pen ml-1"></i>
                         </a>
                     </div>
                 </div>
             </div>
-            {% else %}
-            <div class="md:col-span-2 lg:col-span-3 text-center py-12 card">
-                <i class="fas fa-ghost fa-3x text-gray-600"></i>
-                <p class="mt-4 text-gray-500">No spaces found matching your criteria. Try adjusting your filters.</p>
-            </div>
             {% endfor %}
         </div>
+        {% else %}
+            <p class="text-gray-300">No spaces found.</p>
+        {% endif %}
     </div>
 
-    <!-- Space Details Modal -->
-    <div class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50" id="space-details-modal">
-        <div class="modal-overlay absolute w-full h-full bg-gray-900/70" onclick="closeSpaceModal()"></div>
-        <div class="modal-container bg-gray-800 w-11/12 md:max-w-3xl mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
-            <div class="modal-content text-left">
-                <!-- Modal Header with Image -->
-                <div class="relative">
-                    <img id="modal-space-image" class="w-full h-64 object-cover rounded-t-lg" src="" alt="Space Image">
-                    <div class="absolute top-0 right-0 p-4">
-                        <button onclick="closeSpaceModal()" class="text-white hover:text-gray-300 text-2xl">&times;</button>
-                    </div>
-                </div>
-                <!-- Modal Body -->
-                <div class="p-6">
-                    <h2 id="modal-space-name" class="text-3xl font-bold text-white"></h2>
-                    <p id="modal-space-location" class="text-gray-400 mt-1"></p>
-                    
-                    <div class="flex items-center mt-4">
-                        <div id="modal-space-stars" class="star-color"></div>
-                        <span id="modal-space-rating-text" class="ml-2 text-sm text-gray-400"></span>
-                    </div>
-
-                    <p id="modal-space-price" class="text-2xl font-bold mt-4" style="color: #a9ffe5;"></p>
-
-                    <div class="mt-6 border-t border-gray-700 pt-4">
-                        <h3 class="text-xl font-semibold text-white mb-4">Reviews</h3>
-                        <div id="modal-reviews-container" class="space-y-4 max-h-64 overflow-y-auto">
-                            <!-- Reviews will be dynamically inserted here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Minimal modal scaffolding (optional) -->
+    <div id="space-details-modal" class="hidden fixed inset-0 z-50 items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" onclick="closeSpaceModal()"></div>
+        <div class="relative bg-gray-800 rounded-lg max-w-3xl mx-auto p-6 z-50">
+            <button onclick="closeSpaceModal()" class="text-white float-right">Close</button>
+            <div id="space-modal-content"></div>
         </div>
     </div>
 
     <script>
-        const modal = document.getElementById('space-details-modal');
-
-        function openSpaceModal(spaceId) {
-            fetch(`/api/space/${spaceId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    
-                    document.getElementById('modal-space-image').src = data.space.image_url;
-                    document.getElementById('modal-space-name').textContent = data.space.name;
-                    document.getElementById('modal-space-location').textContent = data.space.location_city;
-                    document.getElementById('modal-space-price').innerHTML = `৳${data.space.price_per_month}<span class="text-sm font-normal text-gray-500">/month</span>`;
-
-                    const starsContainer = document.getElementById('modal-space-stars');
-                    starsContainer.innerHTML = '';
-                    if (data.review_count > 0) {
-                        for (let i = 0; i < Math.floor(data.average_rating); i++) {
-                            starsContainer.innerHTML += '<i class="fas fa-star"></i>';
-                        }
-                        if (data.average_rating % 1 !== 0) {
-                            starsContainer.innerHTML += '<i class="fas fa-star-half-alt"></i>';
-                        }
-                        document.getElementById('modal-space-rating-text').textContent = `${data.average_rating} (${data.review_count} reviews)`;
-                    } else {
-                        document.getElementById('modal-space-rating-text').textContent = 'No reviews yet';
-                    }
-
-                    const reviewsContainer = document.getElementById('modal-reviews-container');
-                    reviewsContainer.innerHTML = '';
-                    if (data.reviews.length > 0) {
-                        data.reviews.forEach(review => {
-                            const photoHtml = review.photo_url 
-                                ? `<img src="${review.photo_url}" alt="Review photo" class="mt-2 rounded-lg max-w-xs">`
-                                : '';
-                            const reviewElement = `
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="flex items-center">
-                                        <p class="font-semibold text-white">${review.user_name}</p>
-                                        <div class="star-color ml-4">${'<i class="fas fa-star"></i>'.repeat(review.rating)}</div>
-                                    </div>
-                                    <p class="text-gray-400 mt-1">${review.comment}</p>
-                                    ${photoHtml}
-                                </div>
-                            `;
-                            reviewsContainer.innerHTML += reviewElement;
-                        });
-                    } else {
-                        reviewsContainer.innerHTML = '<p class="text-gray-500">No reviews have been submitted for this space yet.</p>';
-                    }
-
-                    modal.classList.remove('opacity-0', 'pointer-events-none');
-                    document.body.classList.add('modal-active');
-                });
+        function openSpaceModal(id){
+            // optional: fetch detail and populate modal
+            document.getElementById('space-details-modal').classList.remove('hidden');
         }
-
-        function closeSpaceModal() {
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            document.body.classList.remove('modal-active');
+        function closeSpaceModal(){
+            document.getElementById('space-details-modal').classList.add('hidden');
         }
     </script>
 </body>

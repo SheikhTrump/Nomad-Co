@@ -119,6 +119,8 @@
                     <p class="font-semibold" style="color: #a9ffe5;">{{ profile.user_id }}</p>
                     <p class="text-gray-400 mt-4">{{ profile.bio }}</p>
                     <button onclick="toggleModal('edit-profile-modal')" class="mt-6 w-full py-3 px-4 btn-primary rounded-md transition">Edit Profile</button>
+                    <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="mt-4 w-full inline-block py-3 px-4 btn-primary rounded-md transition text-center">Emergency Contacts</a>
+                    <a href="{{ url_for('traveler_profiles.booking_history') }}" class="mt-4 w-full inline-block py-3 px-4 btn-primary rounded-md transition text-center">Booking History</a>
                 </div>
                 <!--Budget ebong WiFi speed er jonno preferences card-->
                 <div class="card p-6 mt-8">

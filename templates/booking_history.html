@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="max-w-3xl mx-auto py-10">
+        <h1 class="text-2xl font-bold mb-6">My Booking History</h1>
+
+        {% if history %}
+        <table class="w-full table-auto bg-gray-800 rounded">
+            <thead>
+                <tr class="text-left">
+                    <th class="px-4 py-2">Space</th>
+                    <th class="px-4 py-2">Date</th>
+                    <th class="px-4 py-2">Status</th>
+                    <th class="px-4 py-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in history %}
+                <tr id="booking-row-{{ booking['booking_id'] }}">
+                    <td class="px-4 py-3">{{ booking['space_title'] or booking.space_title }}</td>
+                    <td class="px-4 py-3">{{ booking['date'] or booking.date }}</td>
+                    <td class="px-4 py-3" id="booking-status-{{ booking['booking_id'] }}">{{ booking['status'] or booking.status }}</td>
+                    <td class="px-4 py-3">
+                        <!-- Form supports non-JS fallback. JS will intercept and send AJAX. -->
+                        <form class="cancel-form" method="post" action="{{ url_for('traveler_profiles.cancel_booking_profile', booking_id=booking['booking_id']) }}">
+                            <input type="hidden" name="booking_id" value="{{ booking['booking_id'] }}">
+                            <button type="submit" class="cancel-booking bg-red-600 text-white px-3 py-1 rounded" data-booking-id="{{ booking['booking_id'] }}">
+                                Cancel
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No bookings found.</p>
+        {% endif %}
+        <a href="{{ url_for('traveler_profiles.view_traveler_profile') }}" class="mt-6 inline-block text-teal-400">Back to Profile</a>
+    </div>
+
+    <script>
+    // Intercept cancel forms and POST JSON via fetch (includes cookies)
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.cancel-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                // If fetch not available, allow normal form submit fallback
+                if (!window.fetch) return;
+
+                e.preventDefault();
+
+                var btn = form.querySelector('.cancel-booking');
+                if (!btn) return;
+
+                var bookingId = btn.getAttribute('data-booking-id') || form.querySelector('input[name="booking_id"]').value;
+                if (!bookingId) {
+                    alert('Invalid booking selected.');
+                    return;
+                }
+
+                if (!confirm('Are you sure you want to cancel this booking?')) return;
+
+                // disable button to prevent double clicks
+                btn.disabled = true;
+                var originalText = btn.textContent;
+                btn.textContent = 'Cancelling...';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    credentials: 'same-origin',   // important so session cookie is sent
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ booking_id: bookingId })
+                })
+                .then(function (resp) {
+                    // Try parse JSON; if non-JSON respond with status handling
+                    return resp.json().catch(function () {
+                        return { success: resp.ok, message: resp.statusText || '' };
+                    });
+                })
+                .then(function (data) {
+                    if (data && data.success) {
+                        // remove/mark row cancelled
+                        var row = document.getElementById('booking-row-' + bookingId);
+                        var status = document.getElementById('booking-status-' + bookingId);
+                        if (row) {
+                            row.style.opacity = '0.6';
+                        }
+                        if (status) status.textContent = 'Cancelled';
+                        btn.textContent = 'Cancelled';
+                        btn.disabled = true;
+                    } else {
+                        alert((data && data.message) ? data.message : 'Unable to cancel booking.');
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Cancel request failed', err);
+                    alert('Unable to cancel booking.');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                });
+            });
+        });
+    });
+    </script>
+</body>
+</html>

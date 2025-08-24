@@ -1,9 +1,7 @@
-
-
-import os
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from bson.objectid import ObjectId
+from bson import ObjectId
 from datetime import datetime
+import os
 
 try:
     mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/nomadnest')
@@ -27,7 +25,15 @@ def get_all_spaces():
 
 
 def get_space_by_id(space_id):
-    return spaces_collection.find_one({"_id": ObjectId(space_id)})
+    """
+    Accepts either a hex string id or an ObjectId and returns the space document (or None).
+    """
+    try:
+        _id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
+    except Exception:
+        # If conversion fails, try using the raw value (some records may store string ids)
+        _id = space_id
+    return spaces_collection.find_one({'_id': _id})
 
 
 def filter_spaces(filters):
@@ -127,5 +133,34 @@ def add_sample_spaces():
         ]
         spaces_collection.insert_many(sample_data)
         print(f"{len(sample_data)} sample spaces added.")
+
+def add_booking_to_space(space_id, booking):
+    """
+    Push a booking dict into the space's 'bookings' array.
+    Returns True if the space was matched and updated.
+    """
+    try:
+        _id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
+    except Exception:
+        _id = space_id
+    res = spaces_collection.update_one({'_id': _id}, {'$push': {'bookings': booking}})
+    return res.modified_count > 0
+
+def cancel_booking_in_space(booking_id, user_id):
+    """
+    Remove a booking from any space's bookings array where booking_id and user_id match.
+    Returns True if a booking was removed.
+    """
+    if not booking_id:
+        return False
+    # Try to remove by matching booking_id and user_id
+    try:
+        res = spaces_collection.update_one(
+            {'bookings.booking_id': booking_id, 'bookings.user_id': user_id},
+            {'$pull': {'bookings': {'booking_id': booking_id, 'user_id': user_id}}}
+        )
+        return res.modified_count > 0
+    except Exception:
+        return False
 
 

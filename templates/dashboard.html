@@ -115,6 +115,13 @@
                 </a>
             </div>
 
+            <!-- Add traveler quick links -->
+            <div class="mt-4">
+                <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="btn btn-secondary mr-2">Emergency
+                    Contacts</a>
+                <a href="{{ url_for('traveler_profiles.booking_history') }}" class="btn btn-secondary">My Bookings</a>
+            </div>
+
             {% endif %}
         </div>
         <!-- Dashboard content for different roles will go here -->
