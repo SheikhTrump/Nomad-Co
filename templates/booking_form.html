@@ -1,0 +1,29 @@
+<!-- templates/booking_form.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Book {{ space.title or space.name }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div class="max-w-lg mx-auto py-12">
+    <h1 class="text-2xl font-bold mb-4">Book: {{ space.title or space.name }}</h1>
+    <form method="POST" class="space-y-4 bg-gray-800 p-6 rounded">
+      <div>
+        <label class="block text-sm mb-1">Date</label>
+        <input type="date" name="date" required class="w-full p-2 rounded bg-gray-700 border border-gray-600" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Guests (optional)</label>
+        <input type="number" name="guests" min="1" class="w-full p-2 rounded bg-gray-700 border border-gray-600" />
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="px-4 py-2 bg-teal-500 rounded">Confirm Booking</button>
+        <a href="{{ url_for('space_bp.space_detail', space_id=space._id) }}" class="text-teal-300">Back</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

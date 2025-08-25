@@ -1,4 +1,4 @@
-# models/favorites.py
+#models/favorites.py
 
 from bson.objectid import ObjectId
 # We will use the 'db' and 'users_collection' from your existing user model

@@ -1,6 +1,7 @@
+<!-- templates/create_space_form.html -->
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,51 +15,40 @@
             background-color: #0c5461;
             color: #d1d5db;
         }
-
-        .navbar {
-            background-color: rgba(12, 84, 97, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #237e73;
-        }
-
         .card {
             background-color: #1f2937;
             border: 1px solid #374151;
             border-radius: 1rem;
         }
-
         .btn-primary {
             background-color: #46e0c1;
             border-color: #46e0c1;
             color: #111827;
             font-weight: bold;
         }
-
         .btn-primary:hover {
             background-color: #a9ffe5;
             border-color: #a9ffe5;
         }
-
-        .form-control,
-        .form-select {
+        .form-control, .form-select, .form-checkbox, .form-radio {
             background-color: #374151;
             border-color: #4b5563;
             color: #d1d5db;
         }
-
-        .form-control:focus,
-        .form-select:focus {
+        .form-control:focus, .form-select:focus, .form-checkbox:focus, .form-radio:focus {
             background-color: #4b5563;
             border-color: #46e0c1;
             box-shadow: 0 0 0 0.25rem rgba(70, 224, 193, 0.25);
         }
+        .form-checkbox:checked, .form-radio:checked {
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+        }
     </style>
 </head>
-
 <body class="min-h-screen">
-
     <!-- Navbar -->
-    <nav class="navbar sticky top-0 z-40">
+    <nav class="sticky top-0 z-40 bg-gray-800/80 backdrop-blur-sm shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -76,18 +66,6 @@
 
     <!-- Main Content -->
     <div class="max-w-3xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div
-            class="mb-4 rounded-md p-4 {{ 'bg-teal-900/50 text-teal-300 border border-teal-700' if category == 'success' else 'bg-red-900/50 text-red-300 border border-red-700' }}">
-            <p>{{ message }}</p>
-        </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
-
         <div class="card p-8">
             <h2 class="text-2xl font-bold text-white mb-6">Create a New Space</h2>
             <form action="{{ url_for('space_bp.create_space') }}" method="POST" enctype="multipart/form-data"
@@ -97,61 +75,52 @@
                     <label class="block text-sm font-medium text-gray-400">Space Name</label>
                     <input type="text" name="space_title" required class="mt-1 block w-full rounded-md form-control">
                 </div>
-
+                <div>
+                    <label class="block text-sm font-medium text-gray-400">Location City</label>
+                    <input type="text" name="location_city" required class="mt-1 block w-full rounded-md form-control" placeholder="e.g., Dhaka">
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400">Description</label>
                     <textarea name="description" rows="4" required
                         class="mt-1 block w-full rounded-md form-control"></textarea>
                 </div>
-
                 <div>
-                    <label class="block text-sm font-medium text-gray-400">Price per Night</label>
-                    <input type="number" name="price_per_night" step="0.01" required
+                    <label class="block text-sm font-medium text-gray-400">Price per Night (BDT)</label>
+                    <input type="number" name="price_per_night" step="1" required
                         class="mt-1 block w-full rounded-md form-control">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Space Type</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center"><input type="radio" name="space_type" value="Private Room" class="form-radio h-4 w-4" checked><span class="ml-2">Private Room</span></label>
+                            <label class="flex items-center"><input type="radio" name="space_type" value="Shared Room" class="form-radio h-4 w-4"><span class="ml-2">Shared Room</span></label>
+                            <label class="flex items-center"><input type="radio" name="space_type" value="Full Apartment" class="form-radio h-4 w-4"><span class="ml-2">Full Apartment</span></label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Features</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center"><input type="checkbox" name="has_coworking_space" value="true" class="form-checkbox h-5 w-5"><span class="ml-2">Dedicated Coworking Space</span></label>
+                        </div>
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-2">Amenities</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" name="amenities" value="WiFi"
-                                class="form-checkbox h-5 w-5 text-teal-400 bg-gray-700 border-gray-500 focus:ring-2 focus:ring-teal-400">
-                            <span class="text-gray-300">WiFi</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" name="amenities" value="Air Conditioning"
-                                class="form-checkbox h-5 w-5 text-teal-400 bg-gray-700 border-gray-500 focus:ring-2 focus:ring-teal-400">
-                            <span class="text-gray-300">Air Conditioning</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" name="amenities" value="Parking"
-                                class="form-checkbox h-5 w-5 text-teal-400 bg-gray-700 border-gray-500 focus:ring-2 focus:ring-teal-400">
-                            <span class="text-gray-300">Parking</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" name="amenities" value="Kitchen"
-                                class="form-checkbox h-5 w-5 text-teal-400 bg-gray-700 border-gray-500 focus:ring-2 focus:ring-teal-400">
-                            <span class="text-gray-300">Kitchen</span>
-                        </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <label class="flex items-center"><input type="checkbox" name="amenities" value="High-Speed WiFi" class="form-checkbox h-5 w-5"><span class="ml-2">High-Speed WiFi</span></label>
+                        <label class="flex items-center"><input type="checkbox" name="amenities" value="AC" class="form-checkbox h-5 w-5"><span class="ml-2">Air Conditioning</span></label>
+                        <label class="flex items-center"><input type="checkbox" name="amenities" value="Parking" class="form-checkbox h-5 w-5"><span class="ml-2">Parking</span></label>
+                        <label class="flex items-center"><input type="checkbox" name="amenities" value="Kitchen" class="form-checkbox h-5 w-5"><span class="ml-2">Kitchen</span></label>
                     </div>
                 </div>
-
 
                 <div>
                     <label class="block text-sm font-medium text-gray-400">Photos</label>
                     <input type="file" name="photos" multiple
                         class="mt-1 block w-full text-sm text-gray-400 file:bg-gray-700 file:text-gray-200 file:rounded-md file:border-0 file:px-4 file:py-2 hover:file:bg-gray-600">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400">Latitude</label>
-                        <input type="text" name="latitude" required class="mt-1 block w-full rounded-md form-control">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400">Longitude</label>
-                        <input type="text" name="longitude" required class="mt-1 block w-full rounded-md form-control">
-                    </div>
                 </div>
 
                 <div class="flex justify-end">
@@ -161,7 +130,5 @@
             </form>
         </div>
     </div>
-
 </body>
-
 </html>
