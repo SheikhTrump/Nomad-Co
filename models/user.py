@@ -1,5 +1,4 @@
-# models/user.py
-
+#models/user.py
 
 from pymongo import MongoClient, ReturnDocument
 from werkzeug.security import generate_password_hash

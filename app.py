@@ -10,7 +10,10 @@ from routes.space_filters import space_filters_bp
 from routes.reviews import reviews_bp
 from routes.api import api_bp
 from routes.space import space_bp
-from routes.favorites import favorites_bp # Your new blueprint
+from routes.favorites import favorites_bp
+from routes.payout import payout_bp
+from routes.suggestions import suggestions_bp
+from routes.analytics import analytics_bp
 
 load_dotenv()
 
@@ -28,18 +31,23 @@ def create_app():
         app.register_blueprint(reviews_bp)
         app.register_blueprint(api_bp)
         app.register_blueprint(space_bp)
-        app.register_blueprint(favorites_bp) # Register your new blueprint
+        app.register_blueprint(favorites_bp)
+        app.register_blueprint(payout_bp)
+        app.register_blueprint(suggestions_bp)
+        app.register_blueprint(analytics_bp)
 
     # --- Homepage Route ---
     @app.route('/')
     def index():
+        # If a user is already logged in, send them to their dashboard
         if 'user_id' in session:
             return redirect(url_for('auth.dashboard'))
-        return redirect(url_for('auth.login'))
+        # Otherwise, show the new landing page
+        return render_template('index.html')
 
     return app
 
 # --- Main execution block ---
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, port=5001) # Added port for consistency
+    app.run(debug=True, port=5001)

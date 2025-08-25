@@ -5,12 +5,12 @@ from pymongo import MongoClient
 from datetime import datetime
 from bson.objectid import ObjectId
 
-#Database Connection
+# Database Connection
 try:
     mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/nomadnest')
     client = MongoClient(mongo_uri)
     db = client.get_database('nomadnest')
-    #Amra ekhane users collection er jonno nijeder reference toiri korchi.
+    # Amra ekhane users collection er jonno nijeder reference toiri korchi.
     users_collection = db.users
     print("Traveler Profile Model: MongoDB connected successfully.")
 except Exception as e:
@@ -35,28 +35,34 @@ def update_traveler_profile_info(user_id, data, new_profile_pic_path=None):
         'bio': data.get('bio'),
         'max_budget': int(data.get('max_budget', 1000)),
         'min_wifi_speed': int(data.get('min_wifi_speed', 25)),
-        #FIXED: 'looking_for' field ta ekhane add kora hoyeche jate update hoy
+        # FIXED: 'looking_for' field ta ekhane add kora hoyeche jate update hoy
         'looking_for': data.get('looking_for', '')
     }
 
-    #Shudhu notun profile picture upload dilei URL ta update hobe
+    # Shudhu notun profile picture upload dilei URL ta update hobe
     if new_profile_pic_path:
         update_data['profile_picture_url'] = new_profile_pic_path
 
-    #MongoDB te '$set' operator use kore shudhu nirdishto field gulo update kora hocche
+    # MongoDB te '$set' operator use kore shudhu nirdishto field gulo update kora hocche
     users_collection.update_one(
         {'user_id': user_id},
         {'$set': update_data}
     )
 
-    #Change confirm korar jonno updated profile ta return kora hocche.
+    # Change confirm korar jonno updated profile ta return kora hocche.
     return get_user_profile(user_id)
 
 def get_emergency_contacts(user_id):
+    """
+    Fetches the emergency contacts for a given user.
+    """
     user = users_collection.find_one({"user_id": user_id})
     return user.get('emergency_contacts', []) if user else []
 
 def update_emergency_contacts(user_id, contacts):
+    """
+    Updates the emergency contacts for a given user.
+    """
     users_collection.update_one(
         {'user_id': user_id},
         {'$set': {'emergency_contacts': contacts}}

@@ -1,3 +1,5 @@
+<!--templates\traveler_profile.html-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,16 +77,37 @@
             max-height: 400px;
             margin-top: 1rem;
         }
+        /* Styles for the new tabs */
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: #9ca3af; /* gray-400 */
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-button.active {
+            color: #46e0c1;
+            border-bottom-color: #46e0c1;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .star-color { 
+            color: #f59e0b; /* amber-500 */
+        }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <!--Eita hocche oporer navigation bar-->
+    <!-- Navigation bar -->
     <nav class="navbar sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div class="flex justify-between h-16">
                 <div class="flex-shrink-0 flex items-center">
-                    <h1 class="text-2xl font-bold">NomadNest</h1>
+                    <h1 class="text-2xl font-bold text-white">NomadNest</h1>
                 </div>
                 <div class="flex items-center">
                     <span class="text-gray-400 mr-4">Welcome, {{ profile.first_name }}!</span>
@@ -96,39 +119,40 @@
         </div>
     </nav>
 
-    <!--Ekhane page er main content thakbe-->
+    <!-- Main page content -->
     <div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <!--Kono success ba error message dekhale ei section e ashbe-->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="mb-4 rounded-md p-4 {{ 'bg-teal-900/50 text-teal-300 border border-teal-700' if category == 'success' else 'bg-red-900/50 text-red-300 border border-red-700' }}">
-                <p>{{ message }}</p>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+        <!-- Flash messages for success or error -->
+        <!-- FIXED: Added an ID and a class to each flash message for the auto-hide script -->
+        <div id="flash-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash-message mb-4 rounded-md p-4 {{ 'bg-teal-900/50 text-teal-300 border border-teal-700' if category == 'success' else 'bg-red-900/50 text-red-300 border border-red-700' }}">
+                    <p>{{ message }}</p>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!--Bam pasher column, ekhane profile card ache-->
+            <!-- Left column for profile card -->
             <div class="lg-col-span-1">
-                <!--Profile er chobi, naam, user ID, ebong bio-->
+                <!-- Profile picture, name, user ID, and bio -->
                 <div class="card p-6 text-center">
                     <img class="w-32 h-32 rounded-full mx-auto mb-4 border-4 profile-pic object-cover" src="{{ profile.profile_picture_url }}" alt="Profile Picture" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ profile.first_name }}+{{ profile.last_name }}&background=46e0c1&color=111827';">
                     <h2 class="text-2xl font-bold text-white">{{ profile.first_name }} {{ profile.last_name }}</h2>
                     <p class="font-semibold" style="color: #a9ffe5;">{{ profile.user_id }}</p>
                     <p class="text-gray-400 mt-4">{{ profile.bio }}</p>
                     <button onclick="toggleModal('edit-profile-modal')" class="mt-6 w-full py-3 px-4 btn-primary rounded-md transition">Edit Profile</button>
-                    <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="mt-4 w-full inline-block py-3 px-4 btn-primary rounded-md transition text-center">Emergency Contacts</a>
-                    <a href="{{ url_for('traveler_profiles.booking_history') }}" class="mt-4 w-full inline-block py-3 px-4 btn-primary rounded-md transition text-center">Booking History</a>
                 </div>
-                <!--Budget ebong WiFi speed er jonno preferences card-->
+                <!-- Preferences card for budget and WiFi speed -->
                 <div class="card p-6 mt-8">
                     <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">My Preferences</h3>
                     <div class="space-y-4 mt-4">
                         <div class="flex justify-between items-center">
                             <p class="text-gray-400">Max Budget</p>
-                            <p class="font-semibold text-white">৳{{ profile.max_budget }}/month</p>
+                            <p class="font-semibold text-white">৳{{ profile.max_budget }}/night</p>
                         </div>
                         <div class="flex justify-between items-center">
                             <p class="text-gray-400">Min WiFi Speed</p>
@@ -138,63 +162,135 @@
                 </div>
             </div>
 
-            <!--Dan pasher column, ekhane baki details thakbe-->
+            <!-- Right column for other details -->
             <div class="lg:col-span-2 space-y-8">
-                <!--User er personal information er section-->
-                <div class="card p-6">
-                    <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">My Information</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                        <div>
-                            <p class="text-sm text-gray-500">Full Name</p>
-                            <p class="font-semibold text-gray-300">{{ profile.first_name }} {{ profile.last_name }}</p>
+                <!-- Tab Buttons -->
+                <div class="card p-2 rounded-lg flex space-x-2">
+                    <button class="tab-button active w-full text-center" onclick="openTab(event, 'info')">
+                        <i class="fas fa-user mr-2"></i>My Information
+                    </button>
+                    <button class="tab-button w-full text-center" onclick="openTab(event, 'favorites')">
+                        <i class="fas fa-heart mr-2"></i>My Favorites
+                    </button>
+                    <button class="tab-button w-full text-center" onclick="openTab(event, 'reviews')">
+                        <i class="fas fa-star mr-2"></i>My Reviews
+                    </button>
+                </div>
+
+                <!-- Tab Content: My Information -->
+                <div id="info" class="tab-content active">
+                    <div class="card p-6">
+                        <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">My Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Full Name</p>
+                                <p class="font-semibold text-gray-300">{{ profile.first_name }} {{ profile.last_name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Email</p>
+                                <p class="font-semibold text-gray-300">{{ profile.email }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Phone</p>
+                                <p class="font-semibold text-gray-300">{{ profile.phone }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">NID Number</p>
+                                <p class="font-semibold text-gray-300">**********{{ profile.nid[-4:] }} <i class="fas fa-lock text-gray-500 ml-1"></i></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Date of Birth</p>
+                                <p class="font-semibold text-gray-300">{{ profile.dob }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Email</p>
-                            <p class="font-semibold text-gray-300">{{ profile.email }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Phone</p>
-                            <p class="font-semibold text-gray-300">{{ profile.phone }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">NID Number</p>
-                            <p class="font-semibold text-gray-300">**********{{ profile.nid[-4:] }} <i class="fas fa-lock text-gray-500 ml-1"></i></p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Date of Birth</p>
-                            <p class="font-semibold text-gray-300">{{ profile.dob }}</p>
+                    </div>
+                    <div class="card p-6 mt-8">
+                        <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">Current Travel Plans</h3>
+                        <p class="text-gray-400 mt-4">{{ profile.looking_for or 'Not specified yet.' }}</p>
+                    </div>
+                </div>
+
+                <!-- Tab Content: My Favorites -->
+                <div id="favorites" class="tab-content">
+                    <div class="card p-6">
+                        <h3 class="text-xl font-bold text-white border-b pb-4 border-gray-700">My Favorite Spaces</h3>
+                        <div class="mt-4">
+                            {% if favorites %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {% for space in favorites %}
+                                    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
+                                        <img class="h-40 w-full object-cover" src="{{ space.photos[0] if space.photos else 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image' }}" alt="{{ space.space_title }}">
+                                        <div class="p-4 flex flex-col flex-grow">
+                                            <h4 class="font-semibold text-white">{{ space.space_title }}</h4>
+                                            <p class="text-sm text-gray-400">{{ space.location_city }}</p>
+                                            <div class="mt-auto pt-2 flex justify-between items-center">
+                                                <p class="font-bold text-teal-400">৳{{ space.price_per_night }}/night</p>
+                                                <a href="{{ url_for('favorites.remove_favorite', space_id=space._id) }}" class="text-red-500 hover:text-red-400 text-sm">
+                                                    <i class="fas fa-trash-alt mr-1"></i>Remove
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="far fa-heart fa-2x"></i>
+                                    <p class="mt-2">You haven't saved any favorites yet.</p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                
-                <!--User er current travel plan gulo ekhane dekhabe-->
-                <div class="card p-6">
-                    <h3 class="text-xl font-bold text-white border-b pb-4 info-panel-header">Current Travel Plans</h3>
-                    <p class="text-gray-400 mt-4">{{ profile.looking_for or 'Not specified yet.' }}</p>
-                </div>
 
-                <!--Ei section ta remove kora hoyeche-->
+                <!-- Tab Content: My Reviews -->
+                <div id="reviews" class="tab-content">
+                    <div class="card p-6 rounded-lg">
+                        <h3 class="text-xl font-bold text-white border-b pb-4 border-gray-700">My Reviews</h3>
+                        <div class="mt-4 space-y-4">
+                            {% if reviews %}
+                                {% for review in reviews %}
+                                <div class="bg-gray-800 p-4 rounded-lg">
+                                    <h4 class="font-semibold text-white">Review for: {{ review.space_details.space_title }}</h4>
+                                    <div class="flex items-center mt-1">
+                                        <div class="star-color">
+                                            {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-400 mt-2">"{{ review.comment }}"</p>
+                                    {% if review.photo_url %}<img src="{{ review.photo_url }}" alt="Review photo" class="mt-2 rounded-lg max-w-xs">{% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="far fa-comment-dots fa-2x"></i>
+                                    <p class="mt-2">You haven't written any reviews yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
     </div>
 
-    <!--Profile edit korar jonno ei modal/popup ta show korbe-->
+    <!-- Modal for editing profile -->
     <div class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center" id="edit-profile-modal">
         <div class="modal-overlay absolute w-full h-full" onclick="toggleModal('edit-profile-modal')"></div>
         <div class="modal-container w-11/12 md:max-w-4xl mx-auto z-50 overflow-y-auto">
             <div class="modal-content py-4 text-left px-6">
-                <!--Modal er Title-->
+                <!-- Modal Title -->
                 <div class="flex justify-between items-center pb-3 border-b info-panel-header">
                     <p class="text-2xl font-bold text-white">Edit Your Profile</p>
                     <div class="modal-close cursor-pointer z-50" onclick="toggleModal('edit-profile-modal')">
                         <i class="fas fa-times text-gray-500 hover:text-white"></i>
                     </div>
                 </div>
-                <!--Modal er Body ebong Form-->
+                <!-- Modal Body and Form -->
                 <form id="profile-edit-form" action="{{ url_for('traveler_profiles.update_profile') }}" method="POST" enctype="multipart/form-data" class="mt-4 space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!--Form er bam pasher ongsho-->
+                        <!-- Left side of the form -->
                         <div class="space-y-4">
                             <div>
                                 <label for="first_name" class="block text-sm font-medium text-gray-400">First Name</label>
@@ -209,7 +305,7 @@
                                 <textarea name="bio" rows="4" class="mt-1 block w-full rounded-md form-control">{{ profile.bio }}</textarea>
                             </div>
                             <div>
-                                <label for="max_budget" class="block text-sm font-medium text-gray-400">Max Budget (BDT/month)</label>
+                                <label for="max_budget" class="block text-sm font-medium text-gray-400">Max Budget (BDT/night)</label>
                                 <input type="number" name="max_budget" value="{{ profile.max_budget }}" class="mt-1 block w-full rounded-md form-control">
                             </div>
                             <div>
@@ -217,7 +313,7 @@
                                 <input type="number" name="min_wifi_speed" value="{{ profile.min_wifi_speed }}" class="mt-1 block w-full rounded-md form-control">
                             </div>
                         </div>
-                        <!--Form er dan pasher ongsho, chobi crop korar jonno-->
+                        <!-- Right side of the form for image cropping -->
                         <div>
                             <label class="block text-sm font-medium text-gray-400">Profile Picture</label>
                             <label class="file-input-label mt-1 inline-block py-2 px-4 bg-gray-600 text-gray-200 rounded-md hover:bg-gray-500 transition">
@@ -229,14 +325,14 @@
                             </div>
                         </div>
                     </div>
-                    <!--Current travel plans er jonno text area-->
+                    <!-- Text area for current travel plans -->
                     <div class="pt-4 border-t info-panel-header">
-                         <div>
+                          <div>
                             <label for="looking_for" class="block text-sm font-medium text-gray-400">Current Travel Plans</label>
                             <textarea name="looking_for" rows="3" class="mt-1 block w-full rounded-md form-control" placeholder="e.g., A quiet space in Dhaka for 3 months...">{{ profile.looking_for }}</textarea>
                         </div>
                     </div>
-                    <!--Form er footer, ekhane cancel ebong save button ache-->
+                    <!-- Form footer with cancel and save buttons -->
                     <div class="flex justify-end pt-4 border-t info-panel-header mt-4">
                         <button type="button" onclick="toggleModal('edit-profile-modal')" class="px-4 bg-transparent p-3 rounded-lg text-gray-400 hover:bg-gray-700 mr-2 transition">Cancel</button>
                         <button type="submit" class="px-4 btn-primary p-3 rounded-lg transition">Save Changes</button>
@@ -246,7 +342,7 @@
         </div>
     </div>
     
-    <!--Ekhane JavaScript code shuru-->
+    <!-- JavaScript section -->
     <script>
         const editModal = document.getElementById('edit-profile-modal');
         const imageToCrop = document.getElementById('image-to-crop');
@@ -255,7 +351,26 @@
         const editForm = document.getElementById('profile-edit-form');
         let cropper;
 
-        //Modal/Popup open/close korar function
+        // --- Tab Switching Logic ---
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Remove "active" class from all tab buttons
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the clicked tab and set the button to active
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Function to open/close the modal
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
             modal.classList.toggle('opacity-0');
@@ -267,7 +382,7 @@
             }
         }
 
-        //Chobi select korle cropper initialize korar code
+        // Initialize cropper when an image is selected
         profilePictureInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -288,7 +403,7 @@
             reader.readAsDataURL(file);
         });
 
-        //Form submit korar por data server e pathanor code
+        // FIXED: Handle form submission with JSON response
         editForm.addEventListener('submit', (e) => {
             e.preventDefault(); 
             const formData = new FormData(editForm);
@@ -309,20 +424,42 @@
         function submitFormData(formData) {
             fetch(editForm.action, {
                 method: 'POST',
+                headers: {
+                    'Accept': 'application/json' // Ask for a JSON response
+                },
                 body: formData,
             })
             .then(response => {
                 if (response.ok) {
-                    window.location.reload();
+                    return response.json(); // Expect a JSON response
+                }
+                throw new Error('Network response was not ok.');
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload(); // Reload on success
                 } else {
-                    alert('An error occurred. Please try again.');
+                    console.error('Update failed:', data.message || 'Unknown error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
             });
         }
+
+        // FIXED: Add script to auto-hide flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(() => {
+                    message.style.transition = 'opacity 0.5s ease';
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        message.remove();
+                    }, 500); // Wait for fade out to complete before removing
+                }, 5000); // 5 seconds
+            });
+        });
     </script>
 </body>
 </html>

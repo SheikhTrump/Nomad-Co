@@ -1,116 +1,207 @@
+<!-- templates/booking_history.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Booking History</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking History - NomadNest</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0c5461; 
+            color: #d1d5db;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        .btn-secondary {
+            background-color: #374151;
+            color: #d1d5db;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-danger:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <div class="max-w-3xl mx-auto py-10">
-        <h1 class="text-2xl font-bold mb-6">My Booking History</h1>
+<body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-bold text-white">My Booking History</h1>
+                <p class="text-gray-400 mt-1">A record of all your past and upcoming stays.</p>
+            </div>
+            <a class="btn-secondary py-2 px-4 rounded-lg font-semibold transition-colors duration-200" href="{{ url_for('auth.dashboard') }}">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+            </a>
+        </div>
 
-        {% if history %}
-        <table class="w-full table-auto bg-gray-800 rounded">
-            <thead>
-                <tr class="text-left">
-                    <th class="px-4 py-2">Space</th>
-                    <th class="px-4 py-2">Date</th>
-                    <th class="px-4 py-2">Status</th>
-                    <th class="px-4 py-2">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in history %}
-                <tr id="booking-row-{{ booking['booking_id'] }}">
-                    <td class="px-4 py-3">{{ booking['space_title'] or booking.space_title }}</td>
-                    <td class="px-4 py-3">{{ booking['date'] or booking.date }}</td>
-                    <td class="px-4 py-3" id="booking-status-{{ booking['booking_id'] }}">{{ booking['status'] or booking.status }}</td>
-                    <td class="px-4 py-3">
-                        <!-- Form supports non-JS fallback. JS will intercept and send AJAX. -->
-                        <form class="cancel-form" method="post" action="{{ url_for('traveler_profiles.cancel_booking_profile', booking_id=booking['booking_id']) }}">
-                            <input type="hidden" name="booking_id" value="{{ booking['booking_id'] }}">
-                            <button type="submit" class="cancel-booking bg-red-600 text-white px-3 py-1 rounded" data-booking-id="{{ booking['booking_id'] }}">
-                                Cancel
-                            </button>
-                        </form>
-                    </td>
-                </tr>
+        <!-- Booking Details Table -->
+        <div class="card rounded-xl p-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="py-3 pr-3 font-semibold">Space</th>
+                            <th class="py-3 px-3 font-semibold">Dates</th>
+                            <th class="py-3 px-3 font-semibold">Status</th>
+                            <th class="py-3 pl-3 font-semibold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for booking in history %}
+                        <tr id="booking-row-{{ booking['booking_id'] }}" class="border-b border-gray-700 last:border-b-0">
+                            <td class="py-4 pr-3 font-semibold text-white">{{ booking['space_title'] }}</td>
+                            <td class="py-4 px-3 text-gray-400">{{ booking['check_in_date'] }} to {{ booking['check_out_date'] }}</td>
+                            <td class="py-4 px-3">
+                                <span id="booking-status-{{ booking['booking_id'] }}" class="px-2 py-1 text-xs font-semibold rounded-full 
+                                    {{ 'bg-green-900/50 text-green-300' if booking.status == 'Confirmed' else 'bg-red-900/50 text-red-300' }}">
+                                    {{ booking['status'] }}
+                                </span>
+                            </td>
+                            <td class="py-4 pl-3 text-right">
+                                {% if booking.status == 'Confirmed' %}
+                                <form class="cancel-form inline-block" method="post" action="{{ url_for('traveler_profiles.cancel_booking_profile', booking_id=booking['booking_id']) }}">
+                                    <input type="hidden" name="booking_id" value="{{ booking['booking_id'] }}">
+                                    <button type="submit" class="cancel-booking btn-danger text-xs font-semibold py-1 px-3 rounded-md transition" data-booking-id="{{ booking['booking_id'] }}">
+                                        Cancel
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-10">
+                                <i class="fas fa-suitcase-rolling fa-2x mb-2"></i>
+                                <p>You haven't made any bookings yet.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Suggestions Section -->
+        {% if suggestions %}
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold text-white text-center mb-8">Popular Spots Nearby</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {% for suggestion in suggestions %}
+                <div class="card rounded-lg shadow-lg overflow-hidden flex flex-col">
+                    <img class="h-48 w-full object-cover" src="{{ suggestion.photos[0] if suggestion.photos and suggestion.photos[0].startswith('http') else url_for('static', filename=suggestion.photos[0]) if suggestion.photos else 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image' }}" alt="{{ suggestion.space_title }}">
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h4 class="font-semibold text-white">{{ suggestion.space_title }}</h4>
+                        <p class="text-sm text-gray-400">{{ suggestion.location_city }}</p>
+                        <div class="mt-auto pt-2 flex justify-between items-center">
+                            <p class="font-bold text-teal-400">৳{{ suggestion.price_per_night }}/night</p>
+                            <a href="{{ url_for('space_bp.space_detail', space_id=suggestion._id) }}" class="text-sm text-teal-300 hover:text-white">View</a>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No bookings found.</p>
+            </div>
+        </div>
         {% endif %}
-        <a href="{{ url_for('traveler_profiles.view_traveler_profile') }}" class="mt-6 inline-block text-teal-400">Back to Profile</a>
     </div>
 
     <script>
-    // Intercept cancel forms and POST JSON via fetch (includes cookies)
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.cancel-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
-                // If fetch not available, allow normal form submit fallback
-                if (!window.fetch) return;
-
                 e.preventDefault();
+                
+                // Using a custom modal instead of confirm()
+                const bookingId = form.querySelector('input[name="booking_id"]').value;
+                const spaceTitle = document.querySelector(`#booking-row-${bookingId} td:first-child`).textContent;
 
-                var btn = form.querySelector('.cancel-booking');
-                if (!btn) return;
+                // Create and show a confirmation modal
+                const modalHTML = `
+                    <div id="confirmation-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-50">
+                        <div class="card rounded-xl p-8 max-w-sm text-center">
+                            <h3 class="text-xl font-bold text-white mb-2">Cancel Booking?</h3>
+                            <p class="text-gray-400 mb-6">Are you sure you want to cancel your booking for <strong>${spaceTitle}</strong>?</p>
+                            <div class="flex justify-center gap-4">
+                                <button id="confirm-cancel" class="btn-danger py-2 px-6 rounded-lg font-semibold">Yes, Cancel</button>
+                                <button id="deny-cancel" class="btn-secondary py-2 px-6 rounded-lg font-semibold">No</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-                var bookingId = btn.getAttribute('data-booking-id') || form.querySelector('input[name="booking_id"]').value;
-                if (!bookingId) {
-                    alert('Invalid booking selected.');
-                    return;
-                }
+                document.getElementById('confirm-cancel').addEventListener('click', () => {
+                    performCancellation(form, bookingId);
+                    document.getElementById('confirmation-modal').remove();
+                });
 
-                if (!confirm('Are you sure you want to cancel this booking?')) return;
-
-                // disable button to prevent double clicks
-                btn.disabled = true;
-                var originalText = btn.textContent;
-                btn.textContent = 'Cancelling...';
-
-                fetch(form.action, {
-                    method: 'POST',
-                    credentials: 'same-origin',   // important so session cookie is sent
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ booking_id: bookingId })
-                })
-                .then(function (resp) {
-                    // Try parse JSON; if non-JSON respond with status handling
-                    return resp.json().catch(function () {
-                        return { success: resp.ok, message: resp.statusText || '' };
-                    });
-                })
-                .then(function (data) {
-                    if (data && data.success) {
-                        // remove/mark row cancelled
-                        var row = document.getElementById('booking-row-' + bookingId);
-                        var status = document.getElementById('booking-status-' + bookingId);
-                        if (row) {
-                            row.style.opacity = '0.6';
-                        }
-                        if (status) status.textContent = 'Cancelled';
-                        btn.textContent = 'Cancelled';
-                        btn.disabled = true;
-                    } else {
-                        alert((data && data.message) ? data.message : 'Unable to cancel booking.');
-                        btn.disabled = false;
-                        btn.textContent = originalText;
-                    }
-                })
-                .catch(function (err) {
-                    console.error('Cancel request failed', err);
-                    alert('Unable to cancel booking.');
-                    btn.disabled = false;
-                    btn.textContent = originalText;
+                document.getElementById('deny-cancel').addEventListener('click', () => {
+                    document.getElementById('confirmation-modal').remove();
                 });
             });
         });
+
+        function performCancellation(form, bookingId) {
+            const btn = form.querySelector('.cancel-booking');
+            if (!btn) return;
+            
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = '...';
+
+            fetch(form.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ booking_id: bookingId })
+            })
+            .then(resp => resp.json().catch(() => ({ success: resp.ok, message: resp.statusText || 'An error occurred.' })))
+            .then(data => {
+                if (data && data.success) {
+                    const row = document.getElementById('booking-row-' + bookingId);
+                    const status = document.getElementById('booking-status-' + bookingId);
+                    
+                    if (row) row.style.opacity = '0.6';
+                    if (status) {
+                        status.textContent = 'Cancelled';
+                        status.className = 'px-2 py-1 text-xs font-semibold rounded-full bg-red-900/50 text-red-300';
+                    }
+                    btn.remove(); // Remove the button after cancellation
+                } else {
+                    // Handle error with a custom message box if needed
+                    console.error("Cancellation failed:", data.message);
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            })
+            .catch(err => {
+                console.error('Cancel request failed', err);
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
+        }
     });
     </script>
 </body>

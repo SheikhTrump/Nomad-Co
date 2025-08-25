@@ -1,35 +1,113 @@
-<!-- templates/spaces.html -->
+<!--templates\spaces.html-->
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find Your Space - NomadNest</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0c5461; color: #d1d5db; }
-        .navbar { background-color: rgba(12,84,97,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #237e73; }
-        .card { background-color:#1f2937; border:1px solid #374151; }
-        .btn-primary { background-color:#46e0c1; color:#111827; padding:.4rem .75rem; border-radius:.375rem; font-weight:600; }
-        .btn-primary:hover { background-color:#a9ffe5; }
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0c5461; 
+            color: #d1d5db;
+        }
+        .navbar {
+            background-color: rgba(12, 84, 97, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #237e73;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-y: hidden; }
+        .star-color { color: #f59e0b; }
+        .form-control, .form-select, .form-checkbox, .form-radio {
+            background-color: #1f2937;
+            border-color: #374151;
+            color: #d1d5db;
+        }
+        .form-control:focus, .form-select:focus, .form-checkbox:focus, .form-radio:focus {
+            background-color: #1f2937;
+            border-color: #46e0c1;
+            box-shadow: 0 0 0 0.25rem rgba(70, 224, 193, 0.25);
+            outline: none;
+        }
+        .form-checkbox:checked, .form-radio:checked {
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+        }
+        .btn-primary {
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+            color: #111827;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background-color: #a9ffe5;
+            border-color: #a9ffe5;
+        }
+        .btn-primary:disabled {
+            background-color: #4b5563;
+            border-color: #4b5563;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+        }
+        .star-rating input { display: none; }
+        .star-rating label {
+            font-size: 2.5rem;
+            color: #4b5563;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .star-rating input:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #f59e0b;
+        }
+        .preview-stars { color: #f59e0b; }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
     <nav class="navbar sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center h-16">
-                <div class="text-2xl font-bold text-white">NomadNest</div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-2xl font-bold text-white">NomadNest</h1>
+                </div>
+                <div class="flex items-center">
+                    <a href="{{ url_for('auth.dashboard') }}" class="py-2 px-4 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
-
+    
     <div class="container mx-auto px-4 py-8">
-        <!-- FIXED: Restored the full filter form -->
+        <div class="text-center">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                {% if is_my_spaces_page %}My Spaces{% else %}Find Your Next Home{% endif %}
+            </h1>
+            <p class="text-lg text-gray-400 mb-8">
+                {% if is_my_spaces_page %}Manage your listings and view their details.{% else %}Explore co-living spaces across Bangladesh.{% endif %}
+            </p>
+        </div>
+
+        <!-- Filter Form -->
         <div class="bg-gray-800 p-6 rounded-lg shadow-md mb-8 border border-gray-700">
-            <form action="{{ url_for('space_filters.view_spaces') }}" method="GET">
+            <form action="{{ url_for('space_filters.view_spaces') if not is_my_spaces_page else url_for('space_bp.get_my_spaces_route') }}" method="GET">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                     <!-- Basic Filters -->
                     <div class="space-y-4">
@@ -43,7 +121,7 @@
                     
                     <!-- Price Range Filter -->
                     <div class="space-y-4">
-                        <label class="block text-sm font-medium text-gray-400">Price Range (BDT)</label>
+                        <label class="block text-sm font-medium text-gray-400">Price per Night (BDT)</label>
                         <div class="flex items-center space-x-2">
                             <input type="number" name="min_price" value="{{ filters.min_price }}" class="mt-1 block w-full rounded-md form-control" placeholder="Min">
                             <span class="text-gray-500">-</span>
@@ -87,7 +165,9 @@
                     <div class="space-y-4">
                         <label for="sort_by" class="block text-sm font-medium text-gray-400">Sort By</label>
                         <select name="sort_by" id="sort_by" class="mt-1 block w-full rounded-md form-select">
+                            {% if session.role == 'traveler' %}
                             <option value="best_match" {% if filters.sort_by == 'best_match' %}selected{% endif %}>Best Match</option>
+                            {% endif %}
                             <option value="price_asc" {% if filters.sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
                             <option value="price_desc" {% if filters.sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
                         </select>
@@ -95,7 +175,7 @@
                 </div>
                 <!-- Submit Buttons -->
                 <div class="mt-6 flex justify-end space-x-2">
-                    <a href="{{ url_for('space_filters.view_spaces') }}" class="inline-flex justify-center rounded-md border border-gray-600 bg-gray-700 py-2 px-4 text-sm font-medium text-gray-300 shadow-sm hover:bg-gray-600">
+                    <a href="{{ url_for('space_filters.view_spaces') if not is_my_spaces_page else url_for('space_bp.get_my_spaces_route') }}" class="inline-flex justify-center rounded-md border border-gray-600 bg-gray-700 py-2 px-4 text-sm font-medium text-gray-300 shadow-sm hover:bg-gray-600">
                         Reset Filters
                     </a>
                     <button type="submit" class="inline-flex justify-center rounded-md border border-transparent py-2 px-4 text-sm font-medium shadow-sm btn-primary">
@@ -108,40 +188,63 @@
         <!-- Space Listings Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for space in spaces %}
-            <div class="card rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 flex flex-col cursor-pointer"
-                 onclick="openSpaceModal('{{ space._id }}')">
-                <img class="h-56 w-full object-cover" src="{{ space.image_url }}" alt="{{ space.name }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1f2937/4b5563?text=Image+Not+Available';">
-                <div class="p-6 flex flex-col flex-grow">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="text-xl font-semibold text-white">{{ space.name }}</h3>
-                            <p class="text-gray-400 mt-1"><i class="fas fa-map-marker-alt mr-2 text-gray-500"></i>{{ space.location_city }}</p>
+            <div class="card rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 flex flex-col relative">
+                <div class="cursor-pointer" onclick="openSpaceModal('{{ space._id }}')">
+                    <img class="h-56 w-full object-cover" src="{{ space.photos[0] if space.photos else 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image' }}" alt="{{ space.space_title }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1f2937/4b5563?text=No+Image';">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-xl font-semibold text-white">{{ space.space_title }}</h3>
+                                <p class="text-gray-400 mt-1"><i class="fas fa-map-marker-alt mr-2 text-gray-500"></i>{{ space.location_city }}</p>
+                            </div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-teal-200 bg-teal-800/50 px-2 py-1 rounded-full">{{ space.space_type }}</span>
                         </div>
-                        <p class="text-lg font-bold text-teal-200">৳{{ space.price_per_night or space.price_per_month or 0 }}<span class="text-sm text-gray-400">/night</span></p>
+                        
+                        <div class="flex items-center mt-2">
+                            {% if space.review_count > 0 %}
+                                <span class="star-color">
+                                    {% for i in range(space.average_rating | int) %}<i class="fas fa-star"></i>{% endfor %}{% if space.average_rating % 1 != 0 %}<i class="fas fa-star-half-alt"></i>{% endif %}
+                                </span>
+                                <span class="ml-2 text-sm text-gray-400">{{ space.average_rating }} ({{ space.review_count }} reviews)</span>
+                            {% else %}
+                                <span class="text-sm text-gray-500">No reviews yet</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-auto pt-4 flex justify-between items-center">
+                            <p class="text-lg font-bold" style="color: #a9ffe5;">৳{{ space.price_per_night }}<span class="text-sm font-normal text-gray-500">/night</span></p>
+                            {% if space.has_coworking_space %}
+                                <span class="inline-flex items-center rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-300">
+                                    <i class="fas fa-briefcase mr-1"></i>Coworking
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
-
-                    <p class="text-gray-300 mt-3 text-sm">{{ space.description or '' }}</p>
-
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        {% for amenity in space.amenities %}
-                            <span class="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">{{ amenity }}</span>
-                        {% endfor %}
-                    </div>
-
-                    <div class="mt-4 flex items-center justify-between">
-                        <a href="{{ url_for('space_bp.book_space', space_id=space['_id']) }}" class="btn-primary inline-block">Book</a>
-
-                        <a href="{{ url_for('reviews.submit_review', space_id=space['_id']) }}" class="text-sm text-teal-400 hover:text-teal-200">
-                            Leave a Review <i class="fas fa-pen ml-1"></i>
-                        </a>
-                    </div>
+                </div>
+                
+                <div class="p-4 border-t border-gray-700 mt-auto flex justify-around items-center">
+                    {% if session.role == 'traveler' %}
+                        <div>
+                            {% if space._id|string in favorites %}
+                                <a href="{{ url_for('favorites.remove_favorite', space_id=space._id) }}" class="text-red-500 font-semibold text-sm"><i class="fas fa-heart mr-1"></i>Favorited</a>
+                            {% else %}
+                                <a href="{{ url_for('favorites.add_favorite', space_id=space._id) }}" class="text-gray-400 hover:text-white font-semibold text-sm"><i class="far fa-heart mr-1"></i>Add to Favorites</a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <button onclick="openReviewModal('{{ space._id }}', '{{ space.space_title }}')" class="text-sm font-medium text-teal-400 hover:text-teal-200">
+                                <i class="fas fa-pen-alt mr-1"></i>Leave a Review
+                            </button>
+                        </div>
+                    {% elif session.role == 'host' and space.host_id == session.user_id %}
+                        <div class="text-center w-full">
+                            <a href="{{ url_for('space_bp.edit_space', space_id=space._id) }}" class="text-sm font-medium text-teal-400 hover:text-teal-200"><i class="fas fa-edit mr-1"></i>Edit My Space</a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
-        {% else %}
-            <p class="text-gray-300">No spaces found.</p>
-        {% endif %}
     </div>
 
     <!-- Space Details Modal -->
@@ -149,29 +252,84 @@
         <div class="modal-overlay absolute w-full h-full bg-gray-900/70" onclick="closeSpaceModal()"></div>
         <div class="modal-container bg-gray-800 w-11/12 md:max-w-3xl mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
             <div class="modal-content text-left">
-                <!-- Modal Header with Image -->
                 <div class="relative">
                     <img id="modal-space-image" class="w-full h-64 object-cover rounded-t-lg" src="" alt="Space Image">
                     <div class="absolute top-0 right-0 p-4">
                         <button onclick="closeSpaceModal()" class="text-white hover:text-gray-300 text-2xl">&times;</button>
                     </div>
                 </div>
-                <!-- Modal Body -->
                 <div class="p-6">
                     <h2 id="modal-space-name" class="text-3xl font-bold text-white"></h2>
                     <p id="modal-space-location" class="text-gray-400 mt-1"></p>
-                    
                     <div class="flex items-center mt-4">
                         <div id="modal-space-stars" class="star-color"></div>
                         <span id="modal-space-rating-text" class="ml-2 text-sm text-gray-400"></span>
                     </div>
-
                     <p id="modal-space-price" class="text-2xl font-bold mt-4" style="color: #a9ffe5;"></p>
-
                     <div class="mt-6 border-t border-gray-700 pt-4">
                         <h3 class="text-xl font-semibold text-white mb-4">Reviews</h3>
-                        <div id="modal-reviews-container" class="space-y-4 max-h-64 overflow-y-auto">
-                            <!-- Reviews will be dynamically inserted here -->
+                        <div id="modal-reviews-container" class="space-y-4 max-h-64 overflow-y-auto"></div>
+                    </div>
+                    <!-- FIXED: Button is now conditional and only shows for travelers -->
+                    <div class="mt-6 flex justify-end">
+                        {% if session.role == 'traveler' %}
+                        <a id="modal-book-button" href="#" class="btn-primary py-2 px-6 rounded-md transition">
+                            View Details & Book
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave a Review Modal -->
+    <div class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50" id="review-modal">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900/70" onclick="closeReviewModal()"></div>
+        <div class="modal-container bg-gray-800 w-11/12 md:max-w-4xl mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content p-8 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Left Side: Form -->
+                    <div>
+                        <h1 class="text-3xl font-bold text-white text-center">Leave a Review</h1>
+                        <p id="review-modal-space-name" class="text-center text-gray-400 mb-6"></p>
+                        <form id="review-form" method="POST" enctype="multipart/form-data">
+                            <div class="mb-6">
+                                <label class="block text-center text-lg font-medium text-gray-300 mb-2">Your Rating</label>
+                                <div class="star-rating">
+                                    <input type="radio" id="5-stars" name="rating" value="5" required/><label for="5-stars" class="fa fa-star"></label>
+                                    <input type="radio" id="4-stars" name="rating" value="4" /><label for="4-stars" class="fa fa-star"></label>
+                                    <input type="radio" id="3-stars" name="rating" value="3" /><label for="3-stars" class="fa fa-star"></label>
+                                    <input type="radio" id="2-stars" name="rating" value="2" /><label for="2-stars" class="fa fa-star"></label>
+                                    <input type="radio" id="1-star" name="rating" value="1" /><label for="1-star" class="fa fa-star"></label>
+                                </div>
+                            </div>
+                            <div class="mb-6">
+                                <label for="comment" class="block text-sm font-medium text-gray-400">Your Review</label>
+                                <textarea name="comment" id="comment" rows="4" class="mt-1 block w-full rounded-md form-control" placeholder="Share your experience..." required></textarea>
+                            </div>
+                            <div class="mb-6">
+                                <label for="photo" class="block text-sm font-medium text-gray-400">Add a Photo (Optional)</label>
+                                <input type="file" name="photo" id="photo" class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-gray-200 hover:file:bg-gray-500">
+                            </div>
+                            <div class="flex justify-end space-x-2">
+                                <button type="button" onclick="closeReviewModal()" class="py-2 px-6 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition">Cancel</button>
+                                <button id="submit-button" type="submit" class="py-2 px-6 btn-primary rounded-md transition" disabled>Confirm & Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- Right Side: Live Preview -->
+                    <div class="card rounded-lg p-6">
+                        <h2 class="text-2xl font-bold text-white text-center mb-4">Live Preview</h2>
+                        <div class="border-t border-gray-700 pt-4">
+                            <div class="flex items-center">
+                                <p class="font-semibold text-white">{{ session.first_name or 'Your Name' }}</p>
+                                <div id="preview-stars-container" class="preview-stars ml-4"></div>
+                            </div>
+                            <p id="preview-comment" class="text-gray-400 mt-1 italic">Your comment will appear here...</p>
+                            <div id="image-preview-container" class="hidden mt-2">
+                                <img id="image-preview" src="#" alt="Review photo" class="rounded-lg max-w-xs">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -180,68 +338,122 @@
     </div>
 
     <script>
-        const modal = document.getElementById('space-details-modal');
-
+        const spaceDetailsModal = document.getElementById('space-details-modal');
+        const reviewModal = document.getElementById('review-modal');
+        
         function openSpaceModal(spaceId) {
-            fetch(`/api/space/${spaceId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    
-                    document.getElementById('modal-space-image').src = data.space.image_url;
-                    document.getElementById('modal-space-name').textContent = data.space.name;
-                    document.getElementById('modal-space-location').textContent = data.space.location_city;
-                    document.getElementById('modal-space-price').innerHTML = `৳${data.space.price_per_month}<span class="text-sm font-normal text-gray-500">/month</span>`;
+            // Prevents modal from opening when clicking on a link or button inside the card
+            if (event.target.closest('a') || event.target.closest('button')) return;
 
-                    const starsContainer = document.getElementById('modal-space-stars');
-                    starsContainer.innerHTML = '';
-                    if (data.review_count > 0) {
-                        for (let i = 0; i < Math.floor(data.average_rating); i++) {
-                            starsContainer.innerHTML += '<i class="fas fa-star"></i>';
-                        }
-                        if (data.average_rating % 1 !== 0) {
-                            starsContainer.innerHTML += '<i class="fas fa-star-half-alt"></i>';
-                        }
-                        document.getElementById('modal-space-rating-text').textContent = `${data.average_rating} (${data.review_count} reviews)`;
-                    } else {
-                        document.getElementById('modal-space-rating-text').textContent = 'No reviews yet';
-                    }
+            fetch(`/api/space/${spaceId}`).then(res => res.json()).then(data => {
+                if (data.error) {
+                    // Using a custom message box instead of alert
+                    console.error("Error fetching space data:", data.error);
+                    return;
+                }
+                document.getElementById('modal-space-image').src = data.space.photos && data.space.photos.length > 0 ? data.space.photos[0] : 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image';
+                document.getElementById('modal-space-name').textContent = data.space.space_title;
+                document.getElementById('modal-space-location').textContent = data.space.location_city;
+                document.getElementById('modal-space-price').innerHTML = `৳${data.space.price_per_night}<span class="text-sm font-normal text-gray-500">/night</span>`;
+                
+                const bookButton = document.getElementById('modal-book-button');
+                // Check if the button exists before setting its href (it won't for hosts)
+                if (bookButton) {
+                    bookButton.href = `/space/${spaceId}`;
+                }
 
-                    const reviewsContainer = document.getElementById('modal-reviews-container');
-                    reviewsContainer.innerHTML = '';
-                    if (data.reviews.length > 0) {
-                        data.reviews.forEach(review => {
-                            const photoHtml = review.photo_url 
-                                ? `<img src="${review.photo_url}" alt="Review photo" class="mt-2 rounded-lg max-w-xs">`
-                                : '';
-                            const reviewElement = `
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="flex items-center">
-                                        <p class="font-semibold text-white">${review.user_name}</p>
-                                        <div class="star-color ml-4">${'<i class="fas fa-star"></i>'.repeat(review.rating)}</div>
-                                    </div>
-                                    <p class="text-gray-400 mt-1">${review.comment}</p>
-                                    ${photoHtml}
-                                </div>
-                            `;
-                            reviewsContainer.innerHTML += reviewElement;
-                        });
-                    } else {
-                        reviewsContainer.innerHTML = '<p class="text-gray-500">No reviews have been submitted for this space yet.</p>';
-                    }
+                const starsContainer = document.getElementById('modal-space-stars');
+                starsContainer.innerHTML = '';
+                if (data.review_count > 0) {
+                    for (let i = 0; i < Math.floor(data.average_rating); i++) starsContainer.innerHTML += '<i class="fas fa-star"></i>';
+                    if (data.average_rating % 1 !== 0) starsContainer.innerHTML += '<i class="fas fa-star-half-alt"></i>';
+                    document.getElementById('modal-space-rating-text').textContent = `${data.average_rating} (${data.review_count} reviews)`;
+                } else {
+                    document.getElementById('modal-space-rating-text').textContent = 'No reviews yet';
+                }
 
-                    modal.classList.remove('opacity-0', 'pointer-events-none');
-                    document.body.classList.add('modal-active');
-                });
+                const reviewsContainer = document.getElementById('modal-reviews-container');
+                reviewsContainer.innerHTML = '';
+                if (data.reviews.length > 0) {
+                    data.reviews.forEach(review => {
+                        const photoHtml = review.photo_url ? `<img src="${review.photo_url}" alt="Review photo" class="mt-2 rounded-lg max-w-xs">` : '';
+                        reviewsContainer.innerHTML += `<div class="border-b border-gray-700 pb-2"><div class="flex items-center"><p class="font-semibold text-white">${review.user_name}</p><div class="star-color ml-4">${'<i class="fas fa-star"></i>'.repeat(review.rating)}</div></div><p class="text-gray-400 mt-1">${review.comment}</p>${photoHtml}</div>`;
+                    });
+                } else {
+                    reviewsContainer.innerHTML = '<p class="text-gray-500">No reviews have been submitted for this space yet.</p>';
+                }
+
+                spaceDetailsModal.classList.remove('opacity-0', 'pointer-events-none');
+                document.body.classList.add('modal-active');
+            });
         }
 
         function closeSpaceModal() {
-            modal.classList.add('opacity-0', 'pointer-events-none');
+            spaceDetailsModal.classList.add('opacity-0', 'pointer-events-none');
             document.body.classList.remove('modal-active');
         }
+
+        const reviewForm = document.getElementById('review-form');
+        const reviewSubmitButton = document.getElementById('submit-button');
+        const ratingInputs = reviewModal.querySelectorAll('input[name="rating"]');
+        const commentInput = reviewModal.querySelector('#comment');
+        const photoInput = reviewModal.querySelector('#photo');
+        const previewContainer = reviewModal.querySelector('#image-preview-container');
+        const previewImage = reviewModal.querySelector('#image-preview');
+        const previewStars = document.getElementById('preview-stars-container');
+        const previewComment = document.getElementById('preview-comment');
+
+        function openReviewModal(spaceId, spaceName) {
+            reviewForm.action = `/review/new/${spaceId}`;
+            document.getElementById('review-modal-space-name').textContent = `for ${spaceName}`;
+            reviewForm.reset();
+            previewContainer.classList.add('hidden');
+            validateAndPreview();
+            reviewModal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+        }
+
+        function closeReviewModal() {
+            reviewModal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
+        }
+
+        function validateAndPreview() {
+            const isRatingSelected = Array.from(ratingInputs).some(input => input.checked);
+            const isCommentFilled = commentInput.value.trim() !== '';
+            reviewSubmitButton.disabled = !(isRatingSelected && isCommentFilled);
+
+            const selectedRating = reviewModal.querySelector('input[name="rating"]:checked');
+            previewStars.innerHTML = '';
+            if (selectedRating) {
+                for (let i = 0; i < selectedRating.value; i++) {
+                    previewStars.innerHTML += '<i class="fas fa-star"></i>';
+                }
+            }
+
+            if (isCommentFilled) {
+                previewComment.textContent = commentInput.value;
+                previewComment.classList.remove('italic');
+            } else {
+                previewComment.textContent = 'Your comment will appear here...';
+                previewComment.classList.add('italic');
+            }
+        }
+
+        ratingInputs.forEach(input => input.addEventListener('change', validateAndPreview));
+        commentInput.addEventListener('input', validateAndPreview);
+
+        photoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                previewContainer.classList.remove('hidden');
+                reader.onload = (e) => previewImage.setAttribute('src', e.target.result);
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>

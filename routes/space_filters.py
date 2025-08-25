@@ -1,16 +1,26 @@
-#routes/space_filters.py
+#routes\space_filters.py
 
-from flask import Blueprint, render_template, request
-from models.space import filter_spaces, add_sample_spaces, get_all_spaces #Amader space model theke function gulo import kora hocche
-from models.review import get_average_rating_for_space #Review model theke average rating ber korar function import kora
+from flask import Blueprint, render_template, request, session
+from models.space import filter_spaces, add_sample_spaces
+from models.review import get_average_rating_for_space
+from models.favorites import get_user_favorite_ids
+from models.traveler_profile import get_user_profile
 
+# Ei feature er jonno ekta notun Blueprint toiri kora
+space_filters_bp = Blueprint('space_filters', __name__, template_folder='../templates')
 
-space_filters_bp = Blueprint('space_filters', __name__, template_folder='../templates') #Ei feature er jonno ekta notun Blueprint toiri kora
-
-#Ei function ta '/spaces' URL er jonno kaj korbe
+# Ei function ta '/spaces' URL er jonno kaj korbe
 @space_filters_bp.route('/spaces', methods=['GET'])
 def view_spaces():
+    # Add sample spaces to the database for demonstration
     add_sample_spaces()
+    
+    # Get user profile if a user is logged in
+    user_profile = None
+    if 'user_id' in session:
+        user_profile = get_user_profile(session['user_id'])
+
+    # Collect filter criteria from the request arguments
     filters = {
         'min_price': request.args.get('min_price', ''),
         'max_price': request.args.get('max_price', ''),
@@ -20,22 +30,26 @@ def view_spaces():
         'amenities': request.args.getlist('amenities'),
         'sort_by': request.args.get('sort_by', 'best_match')
     }
-
     
-    spaces = filter_spaces(filters) #Filter criteria gulo diye database theke space khuje ber kora
+    # Filter criteria gulo diye database theke space khuje ber kora
+    spaces = filter_spaces(filters, user_profile)
     
-    #Prottekta space er jonno average rating ber kora
-    for space in spaces:        
-        avg_rating, review_count = get_average_rating_for_space(space['_id']) #Rating calculate korar function call kora        
-        space['average_rating'] = avg_rating #Space er data te notun rating info add kora
+    # Prottekta space er jonno average rating ber kora
+    for space in spaces:
+        # Rating calculate korar function call kora
+        avg_rating, review_count = get_average_rating_for_space(space['_id'])
+        # Space er data te notun rating info add kora
+        space['average_rating'] = avg_rating
         space['review_count'] = review_count
 
-    # --- আপনার কোড এখানে যোগ করা হয়েছে ---
+    # Get the list of favorite space IDs for the current user
     favorite_ids = []
     if 'user_id' in session:
         favorite_ids = get_user_favorite_ids(session['user_id'])
-    # --- আপনার কোড শেষ ---
 
-    all_amenities = ["High-Speed WiFi", "Kitchen", "AC", "Gym", "Pool"]
+    # Define a list of all possible amenities for the filter form
+    # FIXED: Cleaned up the amenities list as requested.
+    all_amenities = ["High-Speed WiFi", "AC", "Kitchen", "Parking"]
     
-    return render_template('spaces.html', spaces=spaces, filters=filters, all_amenities=all_amenities)
+    # Render the spaces page with the filtered spaces and other necessary data
+    return render_template('spaces.html', spaces=spaces, filters=filters, all_amenities=all_amenities, favorites=favorite_ids)
