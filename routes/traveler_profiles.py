@@ -1,80 +1,91 @@
+#routes\traveler_profiles.py
+
 import os
 import re
 from flask import Blueprint, current_app, request, redirect, url_for, flash, session, render_template, jsonify
 from werkzeug.utils import secure_filename
+from bson.objectid import ObjectId
+
+# Model function imports
 from models.space import cancel_booking_in_space
 from models.traveler_profile import (
-    get_booking_history,
-    cancel_booking_history,
-    get_user_profile,
     update_traveler_profile_info,
+    get_user_profile,
     get_emergency_contacts,
     update_emergency_contacts
 )
-from bson.objectid import ObjectId
+from models.favorites import get_user_favorite_spaces
+from models.review import get_reviews_by_user
+from models.user import db 
 
-#Traveler profile related routes er jonno blueprint create
 traveler_profiles_bp = Blueprint('traveler_profiles', __name__, template_folder='../templates', static_folder='../static')
 
-#File upload er settings
+# File upload settings
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-#File er extension check korar function
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-#Traveler profile dekhano
 @traveler_profiles_bp.route("/profile/traveler")
 def view_traveler_profile():
-    #Jodi login kora na thake ba role traveler na hoy
     if 'user_id' not in session or session.get('role') != 'traveler':
-        flash('Login kore traveler hishabe thakte hobe.', 'danger')
+        flash('You must be logged in as a traveler to view this page.', 'danger')
         return redirect(url_for('auth.login'))
 
-    #User er profile data DB theke ana
     user_id = session['user_id']
     profile_data = get_user_profile(user_id)
 
     if not profile_data:
-        flash('Profile data pawa jaini.', 'danger')
+        flash('Could not find your profile data.', 'danger')
         return redirect(url_for('auth.logout'))
 
-    #Template e data pathano
-    return render_template('traveler_profile.html', profile=profile_data)
+    favorite_spaces = get_user_favorite_spaces(user_id)
+    my_reviews = get_reviews_by_user(user_id)
+    booking_history_data = list(db.bookings.find({'user_id': user_id}))
+    emergency_contacts_data = get_emergency_contacts(user_id)
 
-#Traveler profile update kora
+    return render_template(
+        'traveler_profile.html',
+        profile=profile_data,
+        favorites=favorite_spaces,
+        reviews=my_reviews,
+        history=booking_history_data,
+        contacts=emergency_contacts_data
+    )
+
 @traveler_profiles_bp.route("/profile/update", methods=['POST'])
 def update_profile():
-    #Security check korar way
     if 'user_id' not in session or session.get('role') != 'traveler':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('auth.login'))
     
+    is_ajax = 'application/json' in request.headers.get('Accept', '')
+
     user_id = session['user_id']
     new_profile_pic_path = None
 
-    #File upload handle kora
     if 'profile_picture' in request.files:
         file = request.files['profile_picture']
         if file and file.filename != '' and allowed_file(file.filename):
-            filename = secure_filename(file.filename)  #Safe filename
-            save_path = os.path.join(UPLOAD_FOLDER, filename)  #Save location
+            filename = secure_filename(file.filename)
+            save_path = os.path.join(UPLOAD_FOLDER, filename)
             file.save(save_path)
             new_profile_pic_path = f"/{save_path.replace('//', '/')}"
 
-    #Form data collect kora
     form_data = request.form.to_dict()
 
     try:
-        #Model function diye profile update
         update_traveler_profile_info(user_id, form_data, new_profile_pic_path)
-        flash('Profile successfully update hoyeche!', 'success')
+        flash('Profile successfully updated!', 'success')
+        if is_ajax:
+            return jsonify({'success': True})
+        return redirect(url_for('traveler_profiles.view_traveler_profile'))
     except Exception as e:
-        flash(f'Profile update korte problem: {e}', 'danger')
-
-    #Update howar por abar profile page e pathano
-    return redirect(url_for('traveler_profiles.view_traveler_profile'))
+        flash(f'An error occurred while updating: {e}', 'danger')
+        if is_ajax:
+            return jsonify({'success': False, 'message': str(e)}), 500
+        return redirect(url_for('traveler_profiles.view_traveler_profile'))
 
 @traveler_profiles_bp.route("/profile/emergency_contacts", methods=['GET', 'POST'])
 def emergency_contacts():
@@ -83,7 +94,6 @@ def emergency_contacts():
         return redirect(url_for('auth.login'))
     user_id = session['user_id']
     if request.method == 'POST':
-        # Expecting a list of contacts from the form
         contacts = []
         names = request.form.getlist('contact_name')
         phones = request.form.getlist('contact_phone')
@@ -102,15 +112,17 @@ def booking_history():
     if 'user_id' not in session or session.get('role') != 'traveler':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('auth.login'))
+    
     user_id = session['user_id']
-    history = get_booking_history(user_id)
-    return render_template('booking_history.html', history=history)
+    history = list(db.bookings.find({'user_id': user_id}))
+    
+    suggested_spaces = session.get('suggested_spaces', None)
+    
+    return render_template('booking_history.html', history=history, suggestions=suggested_spaces)
 
 def _extract_id_like(val):
-    """Accept ObjectId, "ObjectId('...')" string, or plain string and return cleaned id or None."""
     if not val:
         return None
-    # ObjectId instance
     try:
         from bson import ObjectId as _OID
         if isinstance(val, _OID):
@@ -120,7 +132,6 @@ def _extract_id_like(val):
     if not isinstance(val, str):
         return str(val)
     v = val.strip()
-    # "ObjectId('...')" or similar
     if v.startswith("ObjectId("):
         try:
             return v.split("'", 2)[1]
@@ -130,7 +141,6 @@ def _extract_id_like(val):
 
 @traveler_profiles_bp.route('/profile/bookings/<booking_id>/cancel', methods=['POST', 'GET'])
 def cancel_booking_profile(booking_id):
-    # require traveller
     if 'user_id' not in session or session.get('role') != 'traveler':
         if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({"success": False, "message": "Authentication required"}), 401
@@ -139,7 +149,6 @@ def cancel_booking_profile(booking_id):
 
     user_id = session['user_id']
 
-    # allow booking_id from path, form, query or JSON body
     body = request.get_json(silent=True) or {}
     candidate = booking_id or request.form.get('booking_id') or request.args.get('booking_id') or body.get('booking_id')
     bid = _extract_id_like(candidate)
@@ -153,22 +162,16 @@ def cancel_booking_profile(booking_id):
         flash(msg, 'warning')
         return redirect(url_for('traveler_profiles.booking_history'))
 
-    # try to cancel in both space document and user booking history
-    space_ok = False
-    user_ok = False
     try:
-        space_ok = bool(cancel_booking_in_space(bid, user_id))
+        result = db.bookings.update_one(
+            {"booking_id": bid, "user_id": user_id},
+            {"$set": {"status": "Cancelled"}}
+        )
+        success = result.modified_count > 0
     except Exception as e:
-        current_app.logger.exception("Error cancelling booking in space: %s", e)
-        space_ok = False
+        current_app.logger.exception("Error cancelling booking: %s", e)
+        success = False
 
-    try:
-        user_ok = bool(cancel_booking_history(bid, user_id))
-    except Exception as e:
-        current_app.logger.exception("Error cancelling booking in user history: %s", e)
-        user_ok = False
-
-    success = bool(space_ok or user_ok)
     msg = 'Booking cancelled.' if success else 'Booking not found or you are not authorized to cancel it.'
 
     if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':

@@ -44,3 +44,4 @@ def get_payout_details(host_id):
         "bookings": host_bookings,
         "booking_count": len(host_bookings)
     }
+

@@ -1,3 +1,5 @@
+<!--templates\space_detail.html-->
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -13,8 +15,12 @@
     {% if space.photos %}
       <div class="grid grid-cols-2 gap-3 mb-6">
         {% for p in space.photos[:4] %}
-         
-          <img src="{{ url_for('static', filename=p) }}" alt="photo" class="w-full h-48 object-cover rounded">
+          <!-- FIXED: Logic to handle both full URLs and relative paths -->
+          {% if p.startswith('http') %}
+            <img src="{{ p }}" alt="photo" class="w-full h-48 object-cover rounded">
+          {% else %}
+            <img src="{{ url_for('static', filename=p) }}" alt="photo" class="w-full h-48 object-cover rounded">
+          {% endif %}
         {% endfor %}
       </div>
     {% endif %}
@@ -33,21 +39,25 @@
       </div>
 
       <aside class="bg-gray-800 p-6 rounded">
-        <form action="{{ url_for('space_bp.book_space', space_id=space._id) }}" method="get">
+        {% if session.role == 'traveler' %}
+        <form action="{{ url_for('space_bp.book_space', space_id=space._id) }}" method="POST">
           <div class="mb-3">
             <label class="block text-sm mb-1">Check-in date</label>
-            <input type="date" name="date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+            <input type="date" name="check_in_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm mb-1">Check-out date</label>
+            <input type="date" name="check_out_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
           </div>
           <div class="mb-4">
             <label class="block text-sm mb-1">Guests</label>
             <input type="number" name="guests" min="1" value="1" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
           </div>
-
-          
           <button type="submit" class="w-full py-2 bg-teal-500 rounded text-black font-semibold">Book</button>
         </form>
+        {% endif %}
 
-        <a href="{{ url_for('space_bp.list_spaces') }}" class="block mt-4 text-teal-300">Back to listings</a>
+        <a href="{{ url_for('space_filters.view_spaces') }}" class="block mt-4 text-teal-300">Back to listings</a>
       </aside>
     </div>
 
@@ -56,8 +66,8 @@
       href="#" 
       class="btn btn-primary" 
       id="navigate-btn"
-      data-lat="{{ space.location.latitude }}" 
-      data-lng="{{ space.location.longitude }}">
+      data-lat="{{ space.latitude }}" 
+      data-lng="{{ space.longitude }}">
       Navigate
     </a>
   </div>
@@ -68,11 +78,16 @@
       const destLat = this.getAttribute('data-lat');
       const destLng = this.getAttribute('data-lng');
 
+      if (!destLat || !destLng) {
+          alert('Location data is not available for this space.');
+          return;
+      }
+
       if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function(position) {
               const originLat = position.coords.latitude;
               const originLng = position.coords.longitude;
-        
+      
               const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
               window.open(url, '_blank');
           }, function() {

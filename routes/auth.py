@@ -1,7 +1,6 @@
-# routes/auth.py
+#routes/auth.py
 
-
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, make_response
 from werkzeug.security import check_password_hash
 # We now import the generic create_user function
 from models.user import create_user, find_user_by_login
@@ -11,12 +10,15 @@ auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
 
 # Default Admin credentials (remains unchanged)
-DEFAULT_ADMIN_USER = {'email': 'admin@nomad.com', 'password': 'adminpassword'}
-# DEFAULT_HOST_USER is now removed
+DEFAULT_ADMIN_USER = {'email': 'admin@nomad.com', 'password': 'Black'}
 
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
+    # If user is already logged in, redirect them to the dashboard
+    if 'user_id' in session:
+        return redirect(url_for('auth.dashboard'))
+
     if request.method == 'POST':
         form_data = {
             'first_name': request.form.get('first_name'),
@@ -30,17 +32,14 @@ def signup():
             'role': request.form.get('role')  # Get the selected role
         }
 
-
         if form_data['password'] != form_data['confirm_password']:
             flash('Passwords do not match!', 'danger')
             return redirect(url_for('auth.signup'))
-
 
         # Check if email already exists
         if find_user_by_login(form_data['email']):
             flash('This email address is already registered.', 'danger')
             return redirect(url_for('auth.signup'))
-
 
         try:
             # Call the generic create_user function
@@ -51,18 +50,23 @@ def signup():
             flash(f'An error occurred: {e}', 'danger')
             return redirect(url_for('auth.signup'))
 
-
-    return render_template('signup.html')
-
-
+    # Add headers to prevent caching of the signup page
+    response = make_response(render_template('signup.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # If user is already logged in, redirect them to the dashboard
+    if 'user_id' in session:
+        return redirect(url_for('auth.dashboard'))
+
     if request.method == 'POST':
         login_identifier = request.form.get('login_identifier')
         password = request.form.get('password')
-
 
         # Admin login check (unchanged)
         if login_identifier == DEFAULT_ADMIN_USER['email'] and password == DEFAULT_ADMIN_USER['password']:
@@ -72,31 +76,30 @@ def login():
             flash('Admin login successful', 'success')
             return redirect(url_for('auth.dashboard'))
 
-
         # Host and Traveler login check (now both from database)
         user = find_user_by_login(login_identifier)
         if user and check_password_hash(user['password'], password):
             session['role'] = user['role']
             session['user_id'] = user['user_id']
             session['first_name'] = user['first_name']
-           
+            
             if user['role'] == 'host':
                 flash('Host login successful', 'success')
             else: # Traveler
                 flash(f"Welcome {user['first_name']}", 'success')
 
-
             return redirect(url_for('auth.dashboard'))
-
 
         # If no match is found
         flash('Invalid credentials. Please try again.', 'danger')
         return redirect(url_for('auth.login'))
 
-
-    return render_template('login.html')
-
-
+    # Add headers to prevent caching of the login page
+    response = make_response(render_template('login.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @auth_bp.route('/dashboard')
@@ -106,19 +109,13 @@ def dashboard():
     return render_template('dashboard.html')
 
 
-
-
 @auth_bp.route('/logout')
 def logout():
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
 
-
-
-
-@auth_bp.route('/')
-def index():
-    return redirect(url_for('auth.login'))
-
-
+# REMOVED the conflicting index route from this blueprint
+# @auth_bp.route('/')
+# def index():
+#     return redirect(url_for('auth.login'))
