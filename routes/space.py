@@ -286,3 +286,32 @@ def api_get_all_spaces():
     spaces_cursor = get_all_spaces()
     spaces_list = [_unwrap_and_normalize_space_obj(space) for space in spaces_cursor]
     return jsonify(spaces_list)
+
+from models.space import delete_space
+
+@space_bp.route('/spaces/delete/<space_id>', methods=['POST'])
+def delete_space_route(space_id):
+    """
+    Allows a host to delete one of their spaces.
+    """
+    if session.get('role') != 'host':
+        flash("You must be a host to delete a space.", "danger")
+        return redirect(url_for('auth.dashboard'))
+
+    space = get_space_by_id(space_id)
+    if not space:
+        flash("Space not found.", "danger")
+        return redirect(url_for('space_bp.get_my_spaces_route'))
+
+    if str(space.get('host_id')) != str(session.get('user_id')):
+        flash("You are not authorized to delete this space.", "danger")
+        return redirect(url_for('space_bp.get_my_spaces_route'))
+
+    # Perform the deletion
+    result = delete_space(space_id)
+    if result.deleted_count > 0:
+        flash("Space deleted successfully!", "success")
+    else:
+        flash("Failed to delete space. Please try again.", "danger")
+
+    return redirect(url_for('space_bp.get_my_spaces_route'))
