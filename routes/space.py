@@ -145,7 +145,8 @@ def create_space():
         "photos": photos_urls,
         "space_type": request.form.get("space_type"),
         "has_coworking_space": "has_coworking_space" in request.form,
-        "wifi_speed_mbps": 50
+        "wifi_speed_mbps": 50,
+        "map_url": request.form.get("map_url")
     }
 
     result = create_space_in_db(space_data)

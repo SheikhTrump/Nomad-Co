@@ -61,42 +61,15 @@
       </aside>
     </div>
 
+    <!-- Debug coordinates -->
+    {% if space.latitude and space.longitude %}
+      <p>Lat: {{ space.latitude }} | Lng: {{ space.longitude }}</p>
+    {% endif %}
+
     <!-- Navigation Button -->
-    <a 
-      href="#" 
-      class="btn btn-primary" 
-      id="navigate-btn"
-      data-lat="{{ space.latitude }}" 
-      data-lng="{{ space.longitude }}">
-      Navigate
-    </a>
+    {% if space.map_url %}
+      <a href="{{ space.map_url }}" target="_blank" class="btn btn-primary">Navigate</a>
+    {% endif %}
   </div>
-
-  <script>
-  document.getElementById('navigate-btn').addEventListener('click', function(e) {
-      e.preventDefault();
-      const destLat = this.getAttribute('data-lat');
-      const destLng = this.getAttribute('data-lng');
-
-      if (!destLat || !destLng) {
-          alert('Location data is not available for this space.');
-          return;
-      }
-
-      if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(function(position) {
-              const originLat = position.coords.latitude;
-              const originLng = position.coords.longitude;
-      
-              const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
-              window.open(url, '_blank');
-          }, function() {
-              alert('Unable to get your location.');
-          });
-      } else {
-          alert('Geolocation is not supported by your browser.');
-      }
-  });
-  </script>
 </body>
 </html>
