@@ -49,3 +49,15 @@ def add_comment(thread_id, comment, user_id, role):
         {"_id": ObjectId(thread_id)},
         {"$push": {"comments": new_comment}}
     )
+
+def delete_thread(thread_id):
+    return community_collection.delete_one({"_id": ObjectId(thread_id)})
+
+def delete_comment(thread_id, comment_id, user_id):
+    """
+    Deletes a comment from a thread if the user is the author.
+    """
+    return community_collection.update_one(
+        {"_id": ObjectId(thread_id)},
+        {"$pull": {"comments": {"_id": ObjectId(comment_id), "user_id": user_id}}}
+    )
