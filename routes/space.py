@@ -272,8 +272,8 @@ def edit_space(space_id):
             "amenities": request.form.getlist("amenities"),
             "space_type": request.form.get("space_type"),
             "has_coworking_space": "has_coworking_space" in request.form,
-            "latitude": request.form.get("latitude"),
-            "longitude": request.form.get("longitude"),
+            "latitude": float(request.form.get("latitude")),
+            "longitude": float(request.form.get("longitude")),
         }
         
         update_space(space_id, updated_data)

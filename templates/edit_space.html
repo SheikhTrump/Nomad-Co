@@ -145,15 +145,16 @@
                     </div>
                 </div>
 
-              <div>
+                <div>
                     <label class="block text-sm font-medium text-gray-400">Latitude</label>
-                    <textarea name="description" rows="4" required
-                        class="mt-1 block w-full rounded-md form-control">{{ space.latitude }}</textarea>
+                    <input type="number" step="any" name="latitude" required
+                        class="mt-1 block w-full rounded-md form-control" value="{{ space.latitude }}">
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-400">Longitude</label>
-                    <textarea name="description" rows="4" required
-                        class="mt-1 block w-full rounded-md form-control">{{ space.longitude }}</textarea>
+                    <input type="number" step="any" name="longitude" required
+                        class="mt-1 block w-full rounded-md form-control" value="{{ space.longitude }}">
                 </div>
         </div>
     </div>
