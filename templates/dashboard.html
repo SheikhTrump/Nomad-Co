@@ -2,6 +2,7 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,24 +11,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        body { 
+        body {
             font-family: 'Inter', sans-serif;
-            background-color: #0c5461; 
+            background-color: #0c5461;
             color: #d1d5db;
         }
+
         .card {
             background-color: #1f2937;
             border: 1px solid #374151;
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(70, 224, 193, 0.1), 0 4px 6px -2px rgba(70, 224, 193, 0.05);
         }
+
         .card-icon {
             background-color: #374151;
             color: #46e0c1;
         }
+
         /* Blinking animation for the suggestions button */
         @keyframes blink {
             50% {
@@ -36,50 +41,66 @@
                 transform: scale(1.05);
             }
         }
+
         .blinking-suggestion {
             animation: blink 1.5s ease-in-out infinite;
             border: 2px solid #46e0c1;
         }
+
         .btn-logout {
             background-color: #374151;
             color: #d1d5db;
         }
+
         .btn-logout:hover {
             background-color: #4b5563;
         }
     </style>
 </head>
+
 <body class="min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        
+
         <!-- Header Section -->
         <div class="flex justify-between items-center mb-10">
             <div>
                 <h1 class="text-3xl font-bold text-white">
                     {% if session.role == 'admin' %}
-                        Admin Dashboard
+                    Admin Dashboard
                     {% elif session.role == 'host' %}
-                        Host Dashboard
+                    Host Dashboard
                     {% elif session.role == 'traveler' %}
-                        Welcome, {{ session.first_name }}!
+                    Welcome, {{ session.first_name }}!
                     {% endif %}
                 </h1>
                 <p class="text-gray-400 mt-1">
                     {% if session.role == 'traveler' %}
-                        Your User ID is: <strong>{{ session.user_id }}</strong>
+                    Your User ID is: <strong>{{ session.user_id }}</strong>
                     {% else %}
-                        Manage your platform activities from here.
+                    Manage your platform activities from here.
                     {% endif %}
                 </p>
             </div>
-            <a class="btn-logout py-2 px-4 rounded-lg font-semibold transition-colors duration-200" href="{{ url_for('auth.logout') }}">
+            <a class="btn-logout py-2 px-4 rounded-lg font-semibold transition-colors duration-200"
+                href="{{ url_for('auth.logout') }}">
                 <i class="fas fa-sign-out-alt mr-2"></i>Logout
             </a>
         </div>
 
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div>
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
+
             <!-- Admin View -->
             {% if session.role == 'admin' %}
             <a href="{{ url_for('analytics.dashboard') }}" class="card rounded-xl p-6 block">
@@ -89,17 +110,67 @@
                 <h2 class="text-xl font-bold text-white">View Analytics</h2>
                 <p class="text-gray-400 mt-2">Access user data, booking trends, and revenue reports.</p>
             </a>
+            <div class="card rounded-xl p-6 block">
+                <a href="{{ url_for('community_bp.community_home') }}">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-teal-600 p-3 rounded-xl"></div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Community Forum</h2>
+                            <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Pending Host Verifications (full width) -->
+            <div class="col-span-1 md:col-span-2 lg:col-span-3">
+                <h2 class="mt-8 text-2xl font-bold text-white">Pending Host Verifications</h2>
+                {% if pending_hosts %}
+                {% for host in pending_hosts %}
+                <div class="card mb-3 p-3">
+                    <p><strong>{{ host.first_name }} {{ host.last_name }}</strong> ({{ host.email }})</p>
+                    <p>Status: <span class="badge bg-warning">Pending</span></p>
+                    <div class="flex gap-4 mb-2">
+                        <img src="/{{ host.verification.nid_photo }}" alt="NID" width="150">
+                        <img src="/{{ host.verification.own_photo }}" alt="Host Photo" width="150">
+                    </div>
+                    <form action="{{ url_for('admin_bp.verify_host', user_id=host._id) }}" method="POST"
+                        style="display:inline;">
+                        <button type="submit"
+                            class="btn btn-success mt-2 px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Verify
+                            Host</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-gray-400">No pending verifications.</p>
+                {% endif %}
+            </div>
             {% endif %}
 
             <!-- Host View -->
             {% if session.role == 'host' %}
-            <a href="{{ url_for('space_bp.create_space') }}" class="card rounded-xl p-6 block">
+            <!-- {% if user %} -->
+            {% if user and user.verification and user.verification.status == 'approved' %}
+            <!-- Show create space button -->
+            <a href="{{ url_for('host_profiles.create_host_profile') }}" class="card rounded-xl p-6 block">
                 <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
                     <i class="fas fa-plus-circle fa-lg"></i>
                 </div>
                 <h2 class="text-xl font-bold text-white">Create a Space</h2>
                 <p class="text-gray-400 mt-2">Add a new listing for travelers to discover and book.</p>
             </a>
+            {% else %}
+            <!-- Show disabled create space card -->
+            <div class="card rounded-xl p-6 block opacity-50 cursor-not-allowed">
+                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                    <i class="fas fa-plus-circle fa-lg"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white">Create a Space</h2>
+                <p class="text-gray-400 mt-2">You must be verified to create a space.</p>
+            </div>
+            {% endif %}
+            {% endif %}
             <a href="{{ url_for('space_bp.get_my_spaces_route') }}" class="card rounded-xl p-6 block">
                 <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
                     <i class="fas fa-home fa-lg"></i>
@@ -114,6 +185,50 @@
                 <h2 class="text-xl font-bold text-white">My Payouts</h2>
                 <p class="text-gray-400 mt-2">Track your earnings and view your booking payment history.</p>
             </a>
+            <div class="card rounded-xl p-6 block">
+                <a href="{{ url_for('community_bp.community_home') }}">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="bg-teal-600 p-3 rounded-xl flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-6a2 2 0 012-2h6m4 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Community Forum</h2>
+                            <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Host Verification Card -->
+            <div class="card rounded-xl p-6 block">
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="bg-green-600 p-3 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-id-card fa-lg text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Host Verification</h2>
+                        <p class="text-gray-400">Verify your identity to unlock hosting features.</p>
+                    </div>
+                </div>
+                {% if not user.is_verified %}
+                {% if user.verification and user.verification.status == "pending" %}
+                <span class="badge bg-warning mt-4 px-3 py-1 rounded text-yellow-200 font-semibold">Waiting for
+                    verification...</span>
+                {% else %}
+                <form action="{{ url_for('host_profiles.verify_host') }}" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="nid_photo" required>
+                    <input type="file" name="own_photo" required>
+                    <button type="submit">Submit for Verification</button>
+                </form>
+                {% endif %}
+                {% else %}
+                <span class="badge bg-success mt-4 px-3 py-1 rounded text-white font-semibold">Verified Host</span>
+                {% endif %}
+            </div>
             {% endif %}
 
             <!-- Traveler View -->
@@ -139,7 +254,8 @@
                 <h2 class="text-xl font-bold text-white">My Bookings</h2>
                 <p class="text-gray-400 mt-2">View your past and upcoming booking history.</p>
             </a>
-            <a href="{{ url_for('suggestions.view_suggestions') }}" class="card rounded-xl p-6 block {% if session.get('new_suggestions') %}blinking-suggestion{% endif %}">
+            <a href="{{ url_for('suggestions.view_suggestions') }}"
+                class="card rounded-xl p-6 block {% if session.get('new_suggestions') %}blinking-suggestion{% endif %}">
                 <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
                     <i class="fas fa-lightbulb fa-lg"></i>
                 </div>
@@ -153,15 +269,35 @@
                 <h2 class="text-xl font-bold text-white">My Favorites</h2>
                 <p class="text-gray-400 mt-2">See all the spaces you've saved for future trips.</p>
             </a>
-             <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="card rounded-xl p-6 block">
+            <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="card rounded-xl p-6 block">
                 <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
                     <i class="fas fa-first-aid fa-lg"></i>
                 </div>
                 <h2 class="text-xl font-bold text-white">Emergency Contacts</h2>
                 <p class="text-gray-400 mt-2">Manage your list of emergency contacts for safety.</p>
             </a>
+            <div class="bg-gray-800 rounded-2xl shadow-md p-6 hover:shadow-lg transition">
+                <a href="{{ url_for('community_bp.community_home') }}">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-teal-600 p-3 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-6a2 2 0 012-2h6m4 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Community Forum</h2>
+                            <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
             {% endif %}
         </div>
     </div>
 </body>
+
 </html>
