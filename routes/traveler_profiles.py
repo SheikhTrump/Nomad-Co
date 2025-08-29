@@ -27,18 +27,28 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @traveler_profiles_bp.route("/profile/traveler")
 def view_traveler_profile():
+    
     if 'user_id' not in session or session.get('role') != 'traveler':
         flash('You must be logged in as a traveler to view this page.', 'danger')
         return redirect(url_for('auth.login'))
-
+    
+    user = db.users.find_one({'_id': ObjectId(session['user_id'])})
+    if not user:
+        flash('Could not find your profile data.', 'danger')
+        return redirect(url_for('auth.logout'))
+    user_id = user['user_id']
+    profile_data = get_user_profile(user_id)
+    '''
     user_id = session['user_id']
     profile_data = get_user_profile(user_id)
-
+    '''
     if not profile_data:
         flash('Could not find your profile data.', 'danger')
         return redirect(url_for('auth.logout'))
+    
 
     favorite_spaces = get_user_favorite_spaces(user_id)
     my_reviews = get_reviews_by_user(user_id)
