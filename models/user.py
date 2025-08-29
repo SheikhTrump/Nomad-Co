@@ -1,24 +1,19 @@
-#models/user.py
-
 from pymongo import MongoClient, ReturnDocument
 from werkzeug.security import generate_password_hash
-from bson.objectid import ObjectId
+from bson.objectid import ObjectId, InvalidId
 import os
 from datetime import datetime
+from flask import session
 
-
-# MongoDB Connection
 mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/nomadnest')
 client = MongoClient(mongo_uri)
 db = client.get_database('nomadnest')
-
 
 users_collection = db.users
 counters_collection = db.counters
 
 
 def calculate_age(dob_string):
-    """Calculates age from a date of birth string."""
     if not dob_string:
         return None
     birth_date = datetime.strptime(dob_string, '%Y-%m-%d').date()
@@ -28,7 +23,6 @@ def calculate_age(dob_string):
 
 
 def get_next_nomad_id():
-    """Generates a new, unique nomad ID (e.g., nomad#1, nomad#2)."""
     counter = counters_collection.find_one_and_update(
         {'_id': 'user_id_counter'},
         {'$inc': {'sequence_value': 1}},
@@ -39,11 +33,10 @@ def get_next_nomad_id():
 
 
 def create_user(data):
-    """Creates a new user (Traveler or Host) and saves it to the database."""
     hashed_password = generate_password_hash(data['password'])
     nomad_id = get_next_nomad_id()
     age = calculate_age(data['dob'])
-   
+
     user_document = {
         "user_id": nomad_id,
         "first_name": data['first_name'],
@@ -54,17 +47,73 @@ def create_user(data):
         "email": data['email'],
         "phone": data['phone'],
         "password": hashed_password,
-        "role": data['role']  
+        "role": data['role'],
+        "verification": {
+            "status": "not_submitted",
+            "nid_photo": "",
+            "own_photo": ""
+        }
     }
-    users_collection.insert_one(user_document)
-    return nomad_id
+    result = users_collection.insert_one(user_document)
+    
+    return str(result.inserted_id)
 
 
 def find_user_by_login(login_identifier):
-    """Finds a user by their email or user_id from the database."""
     user = users_collection.find_one({"email": login_identifier})
     if not user:
         user = users_collection.find_one({"user_id": login_identifier})
     return user
 
 
+def submit_verification_photos(user_id, nid_photo, own_photo):
+    
+    upload_folder = "static/uploads"
+    os.makedirs(upload_folder, exist_ok=True)
+    nid_filename = f"nid_{user_id}.jpg"
+    own_filename = f"own_{user_id}.jpg"
+    nid_path = f"{upload_folder}/{nid_filename}"
+    own_path = f"{upload_folder}/{own_filename}"
+    nid_photo.save(nid_path)
+    own_photo.save(own_path)
+    
+    if is_valid_objectid(user_id):
+        db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "verification": {
+                    "nid_photo": nid_path,
+                    "own_photo": own_path,
+                    "status": "pending"
+                }
+            }}
+        )
+    else:
+        db.users.update_one(
+            {"_id": user_id},
+            {"$set": {
+                "verification": {
+                    "nid_photo": nid_path,
+                    "own_photo": own_path,
+                    "status": "pending"
+                }
+            }}
+        )
+
+
+def is_valid_objectid(oid):
+    try:
+        ObjectId(oid)
+        return True
+    except (InvalidId, TypeError):
+        return False
+
+
+def get_current_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    if is_valid_objectid(user_id):
+        return db.users.find_one({"_id": ObjectId(user_id)})
+    else:
+        return db.users.find_one({"_id": user_id})

@@ -2,20 +2,19 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, make_response
 from werkzeug.security import check_password_hash
-# We now import the generic create_user function
-from models.user import create_user, find_user_by_login
-
+from models.user import create_user, find_user_by_login, db
+from models.traveler_profile import get_user_profile
+from bson.objectid import ObjectId  
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
 
-# Default Admin credentials (remains unchanged)
 DEFAULT_ADMIN_USER = {'email': 'admin@nomad.com', 'password': 'Black'}
 
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
-    # If user is already logged in, redirect them to the dashboard
+    
     if 'user_id' in session:
         return redirect(url_for('auth.dashboard'))
 
@@ -29,28 +28,29 @@ def signup():
             'phone': request.form.get('phone'),
             'password': request.form.get('password'),
             'confirm_password': request.form.get('confirm_password'),
-            'role': request.form.get('role')  # Get the selected role
+            'role': request.form.get('role') 
         }
 
         if form_data['password'] != form_data['confirm_password']:
             flash('Passwords do not match!', 'danger')
             return redirect(url_for('auth.signup'))
 
-        # Check if email already exists
+        
         if find_user_by_login(form_data['email']):
             flash('This email address is already registered.', 'danger')
             return redirect(url_for('auth.signup'))
 
         try:
-            # Call the generic create_user function
+            
             new_user_id = create_user(form_data)
+            session['user_id'] = new_user_id  
             flash(f'Account created successfully! Your User ID is {new_user_id}', 'success')
             return redirect(url_for('auth.login'))
         except Exception as e:
             flash(f'An error occurred: {e}', 'danger')
             return redirect(url_for('auth.signup'))
 
-    # Add headers to prevent caching of the signup page
+    
     response = make_response(render_template('signup.html'))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
@@ -60,7 +60,7 @@ def signup():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # If user is already logged in, redirect them to the dashboard
+    
     if 'user_id' in session:
         return redirect(url_for('auth.dashboard'))
 
@@ -68,45 +68,55 @@ def login():
         login_identifier = request.form.get('login_identifier')
         password = request.form.get('password')
 
-        # Admin login check (unchanged)
+       
         if login_identifier == DEFAULT_ADMIN_USER['email'] and password == DEFAULT_ADMIN_USER['password']:
             session['role'] = 'admin'
             session['user_id'] = 'ADMIN'
-            session['first_name'] = 'Admin' # Add a name for the dashboard
+            session['first_name'] = 'Admin' 
             flash('Admin login successful', 'success')
             return redirect(url_for('auth.dashboard'))
 
-        # Host and Traveler login check (now both from database)
+        
         user = find_user_by_login(login_identifier)
         if user and check_password_hash(user['password'], password):
             session['role'] = user['role']
-            session['user_id'] = user['user_id']
+            session['user_id'] = str(user['_id']) 
             session['first_name'] = user['first_name']
             
             if user['role'] == 'host':
                 flash('Host login successful', 'success')
-            else: # Traveler
+            else: 
                 flash(f"Welcome {user['first_name']}", 'success')
 
             return redirect(url_for('auth.dashboard'))
 
-        # If no match is found
+        
         flash('Invalid credentials. Please try again.', 'danger')
         return redirect(url_for('auth.login'))
 
-    # Add headers to prevent caching of the login page
+    
     response = make_response(render_template('login.html'))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
 
-
 @auth_bp.route('/dashboard')
 def dashboard():
-    if 'role' not in session:
-        return redirect(url_for('auth.login'))
-    return render_template('dashboard.html')
+    dashboard_data = {}
+    if 'user_id' in session:
+        try:
+            user = db.users.find_one({'_id': ObjectId(session['user_id'])})
+        except Exception:
+            user = None
+        dashboard_data['user'] = user
+    #
+    if session.get('role') == 'admin':
+        dashboard_data['pending_hosts'] = list(db.users.find({
+            "role": "host",
+            "verification.status": "pending"
+        }))
+    return render_template('dashboard.html', **dashboard_data)
 
 
 @auth_bp.route('/logout')

@@ -1,9 +1,11 @@
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from werkzeug.utils import secure_filename
-from models.space import create_space, get_spaces_by_host
+from models.space import create_space_from_args, get_spaces_by_host
+from models.user import submit_verification_photos, db
+from bson.objectid import ObjectId
 
-host_profiles_bp = Blueprint("host_profiles", __name__, url_prefix="/host")
+host_bp = Blueprint("host_profiles", __name__, url_prefix="/host")
 
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -13,11 +15,26 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@host_profiles_bp.route("/create", methods=["GET", "POST"])
+def save_file(file):
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+    return filepath
+
+@host_bp.route("/create", methods=["GET", "POST"])
 def create_host_profile():
     if "user_id" not in session:
-        flash("Please log in as a host to create a profile.", "danger")
+        flash("Please log in as a host to create a space.", "danger")
         return redirect(url_for("auth.login"))
+    try:
+        user = db.users.find_one({'_id': ObjectId(session['user_id'])})
+    except Exception:
+        flash("Invalid user session. Please log in again.", "danger")
+        return redirect(url_for("auth.login"))
+    # Check verification status
+    if not user or user.get('verification', {}).get('status') != 'approved':
+        flash("You must be verified by admin before creating a space.", "warning")
+        return redirect(url_for("auth.dashboard"))
 
     if request.method == "POST":
         name = request.form["name"]
@@ -27,12 +44,10 @@ def create_host_profile():
         space_type = request.form["space_type"]
         has_coworking_space = request.form.get("has_coworking_space") == "on"
 
-        # Google Maps Coordinates
         location_city = request.form["location_city"]
         latitude = request.form["latitude"]
         longitude = request.form["longitude"]
 
-        # Photo uploads
         photos = []
         if "photos" in request.files:
             files = request.files.getlist("photos")
@@ -41,29 +56,29 @@ def create_host_profile():
                     filename = secure_filename(file.filename)
                     filepath = os.path.join(UPLOAD_FOLDER, filename)
                     file.save(filepath)
-                    photos.append(filename)
+                    photos.append(filepath)  
 
-        # Save to MongoDB
-        create_space(
-            host_id=session["user_id"],
-            name=name,
-            description=description,
-            price_per_month=price_per_month,
-            amenities=amenities,
-            location_city=location_city,
-            space_type=space_type,
-            has_coworking_space=has_coworking_space,
-            photos=photos,
-            latitude=latitude,
-            longitude=longitude
+        
+        create_space_from_args(
+            session["user_id"],
+            name,
+            description,
+            price_per_month,
+            amenities,
+            location_city,
+            space_type,
+            has_coworking_space,
+            photos,
+            latitude,
+            longitude
         )
 
-        flash("Host profile created successfully!", "success")
+        flash("Space created successfully!", "success")
         return redirect(url_for("host_profiles.my_spaces"))
 
-    return render_template("host_profile.html")
+    return render_template("create_space_form.html")
 
-@host_profiles_bp.route("/my_spaces")
+@host_bp.route("/my_spaces")
 def my_spaces():
     if "user_id" not in session:
         flash("Please log in to view your spaces.", "danger")
@@ -71,3 +86,17 @@ def my_spaces():
 
     spaces = get_spaces_by_host(session["user_id"])
     return render_template("my_spaces.html", spaces=spaces)
+
+@host_bp.route("/verify", methods=["POST"])
+def verify_host():
+    if "user_id" not in session or session.get("role") != "host":
+        flash("Unauthorized.", "danger")
+        return redirect(url_for("auth.dashboard"))
+    nid_photo = request.files.get("nid_photo")
+    own_photo = request.files.get("own_photo")
+    if not nid_photo or not own_photo:
+        flash("Both photos are required.", "danger")
+        return redirect(url_for("auth.dashboard"))
+    submit_verification_photos(session['user_id'], nid_photo, own_photo)
+    flash("Verification submitted. Please wait for admin approval.", "info")
+    return redirect(url_for("auth.dashboard"))

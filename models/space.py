@@ -1,18 +1,16 @@
-#models\space.py
-
 import os
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.objectid import ObjectId
 from datetime import datetime
 import re
 
-# --- MongoDB Connect ---
+
 try:
     mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/nomadnest")
     client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
     db = client.get_database("nomadnest")
     spaces_collection = db.spaces
-    # Helpful indexes for filtering
+    
     spaces_collection.create_index([("price_per_night", ASCENDING)])
     spaces_collection.create_index([("location_city", ASCENDING)])
     spaces_collection.create_index([("has_coworking_space", ASCENDING)])
@@ -20,10 +18,10 @@ try:
 except Exception as e:
     print(f"Space Model: Error connecting to MongoDB: {e}")
 
-# --- CRUD helpers ---
+
 def create_space(space_data):
     space_data["created_at"] = datetime.utcnow()
-    # Optionally generate map_url if latitude/longitude are present
+    
     if "latitude" in space_data and "longitude" in space_data:
         space_data["map_url"] = f"https://www.google.com/maps?q={space_data['latitude']},{space_data['longitude']}"
     return spaces_collection.insert_one(space_data)
@@ -60,13 +58,14 @@ def get_popular_spaces_in_location(location_city, exclude_id=None, limit=4):
     """
     Finds other spaces in the same city, excluding the specified ID.
     Converts ObjectId to string to make the result JSON serializable for sessions.
+
+    
     """
     query = {
         "location_city": location_city,
         "_id": {"$ne": ObjectId(exclude_id)} if exclude_id else {"$exists": True}
     }
     spaces = list(spaces_collection.find(query).limit(limit))
-    # Convert ObjectId to string for each document
     for space in spaces:
         space['_id'] = str(space['_id'])
     return spaces
@@ -243,4 +242,33 @@ def extract_lat_lng_from_map_url(map_url):
     if match:
         return float(match.group(1)), float(match.group(2))
     return None, None
+
+def create_space_from_args(
+    host_id,
+    name,
+    description,
+    price_per_month,
+    amenities,
+    location_city,
+    space_type,
+    has_coworking_space,
+    photos,
+    latitude,
+    longitude
+):
+    space_data = {
+        "host_id": host_id,
+        "name": name,
+        "description": description,
+        "price_per_month": price_per_month,
+        "amenities": amenities,
+        "location_city": location_city,
+        "space_type": space_type,
+        "has_coworking_space": has_coworking_space,
+        "photos": photos,
+        "latitude": latitude,
+        "longitude": longitude
+    }
+    return create_space(space_data)
+
 
