@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <title>Host Conversations</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#095b57; --panel:#0f2b33; --card:#14262a; --muted:#9aa6a7; --accent:#06b6a4; --incoming:#20363a;
+    }
+    body{ background:var(--bg); color:#e6f7f5; font-family:"Segoe UI", Roboto, Arial; padding:28px 0; }
+    .content-wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+    .panel{ background:var(--panel); border-radius:12px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .back-link{ color:#bfeee6; text-decoration:none; }
+    .conversation-list{ list-style:none; padding:0; margin:0; }
+    .conversation-item{ 
+      padding:18px;
+      margin-bottom:16px;
+      background:var(--card);
+      border-radius:8px;
+      display:block;
+      text-decoration:none;
+      color:inherit;
+      border-left:4px solid transparent;
+      transition:all 0.2s ease;
+    }
+    .conversation-item:hover{
+      border-left-color:var(--accent);
+      background:#192f34;
+    }
+    .conversation-item.unread{
+      border-left-color:var(--accent);
+    }
+    .host-name{ font-size:1.1rem; font-weight:600; margin:0 0 8px 0; }
+    .space-title{ 
+      font-size: 0.9rem; 
+      color: #9aa6a7;
+      margin: 4px 0;
+    }
+    .conversation-meta{ display:flex; justify-content:space-between; color:var(--muted); font-size:0.85rem; }
+    .no-items{
+      text-align:center;
+      padding:40px 20px;
+      color:var(--muted);
+    }
+    .tab-nav{
+      display:flex;
+      gap:12px;
+      margin-bottom:20px;
+      border-bottom:1px solid rgba(255,255,255,0.1);
+      padding-bottom:10px;
+    }
+    .tab-link{
+      color:var(--muted);
+      text-decoration:none;
+      padding:6px 12px;
+      border-radius:4px;
+      font-size:0.9rem;
+      font-weight:500;
+    }
+    .tab-link.active{
+      background:rgba(6, 182, 164, 0.15);
+      color:#06b6a4;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+  <div class="content-wrap">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0 0 6px 0">My Conversations</h2>
+        <div class="meta"><small>Your messages with hosts and administrators</small></div>
+      </div>
+      <div>
+        <a class="back-link" href="{{ url_for('auth.dashboard') }}">
+          <i class="fas fa-home mr-1"></i> Back to Dashboard
+        </a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="tab-nav">
+        <a href="{{ url_for('chat.host_conversations') }}" class="tab-link active">Host Messages</a>
+        <a href="{{ url_for('chat.my_complaints') }}" class="tab-link">My Complaints</a>
+      </div>
+      
+      <ul class="conversation-list">
+        {% for c in conversations %}
+          {% set host_name = c.get('host_name') or c.get('host_id') %}
+          {% set conv_id = c.get('_id') or c.get('id') %}
+          {% set unread = c.get('unread_by_user', False) %}
+          {% set host_id = c.get('host_id') %}
+          {% set space_id = c.get('space_id') %}
+          <li>
+            <a href="{{ url_for('chat.contact_host', host_id=host_id, space_id=space_id) }}" class="conversation-item {% if unread %}unread{% endif %}">
+              <h3 class="host-name">{{ host_name }}{% if unread %} <span style="color: var(--accent); font-size: 0.8em;">(New message)</span>{% endif %}</h3>
+              {% if c.get('space_title') %}
+              <div class="space-title">
+                <i class="fas fa-home mr-1"></i> {{ c.get('space_title') }}
+              </div>
+              {% endif %}
+              <div class="conversation-meta">
+                <span>{% if c.get('last_message_at') %}Last message:{% endif %}</span>
+                <span>{{ c.get('last_message_at').strftime('%b %d, %Y at %I:%M %p') if c.get('last_message_at') else 'No messages yet' }}</span>
+              </div>
+            </a>
+          </li>
+        {% else %}
+          <div class="no-items">
+            <p>You don't have any conversations with hosts yet.</p>
+            <p><a href="{{ url_for('space_filters.view_spaces') }}" class="btn-teal" style="display:inline-block; margin-top:10px; padding:8px 16px;">Browse Spaces</a></p>
+          </div>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

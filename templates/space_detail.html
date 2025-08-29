@@ -1,0 +1,112 @@
+<!--templates\space_detail.html-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ space.space_title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div class="max-w-4xl mx-auto py-8 px-4">
+    <h1 class="text-3xl font-bold mb-4">{{ space.space_title }}</h1>
+
+    <!-- Photos -->
+    {% if space.photos %}
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        {% for p in space.photos[:4] %}
+          <!-- FIXED: Logic to handle both full URLs and relative paths -->
+          {% if p.startswith('http') %}
+            <img src="{{ p }}" alt="photo" class="w-full h-48 object-cover rounded">
+          {% else %}
+            <img src="{{ url_for('static', filename=p) }}" alt="photo" class="w-full h-48 object-cover rounded">
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-3 gap-6">
+      <div class="col-span-2 bg-gray-800 p-6 rounded">
+        <p class="mb-4"><strong>Price:</strong> ${{ space.price_per_night }}</p>
+        <p class="mb-4">{{ space.description }}</p>
+
+        <h3 class="font-semibold mb-2">Amenities</h3>
+        <ul class="list-disc ml-5">
+          {% for a in space.amenities %}
+            <li>{{ a }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <aside class="bg-gray-800 p-6 rounded">
+        {% if session.role == 'traveler' %}
+        <form action="{{ url_for('space_bp.book_space', space_id=space._id) }}" method="POST">
+          <div class="mb-3">
+            <label class="block text-sm mb-1">Check-in date</label>
+            <input type="date" name="check_in_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm mb-1">Check-out date</label>
+            <input type="date" name="check_out_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm mb-1">Guests</label>
+            <input type="number" name="guests" min="1" value="1" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+          </div>
+          <button type="submit" class="w-full py-2 bg-teal-500 rounded text-black font-semibold mb-3">Book</button>
+        </form>
+        
+        <!-- Message Host Button -->
+        <a href="{{ url_for('chat.contact_host', host_id=space.host_id, space_id=space._id) }}" class="block w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-white font-semibold text-center transition-colors mb-3">
+          <i class="fas fa-envelope mr-2"></i> Message Host
+        </a>
+        
+        <!-- Report/Complaint Button -->
+        <a href="{{ url_for('chat.submit_complaint_form') }}?host_id={{ space.host_id }}&space_id={{ space._id }}" class="block w-full py-2 bg-gray-600 hover:bg-gray-700 rounded text-white font-semibold text-center transition-colors">
+          <i class="fas fa-flag mr-2"></i> Report Issue
+        </a>
+        {% endif %}
+
+        <a href="{{ url_for('space_filters.view_spaces') }}" class="block mt-4 text-teal-300">Back to listings</a>
+      </aside>
+    </div>
+
+    <!-- Navigation Button -->
+    <a 
+      href="#" 
+      class="btn btn-primary" 
+      id="navigate-btn"
+      data-lat="{{ space.latitude }}" 
+      data-lng="{{ space.longitude }}">
+      Navigate
+    </a>
+  </div>
+
+  <script>
+  document.getElementById('navigate-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      const destLat = this.getAttribute('data-lat');
+      const destLng = this.getAttribute('data-lng');
+
+      if (!destLat || !destLng) {
+          alert('Location data is not available for this space.');
+          return;
+      }
+
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+              const originLat = position.coords.latitude;
+              const originLng = position.coords.longitude;
+      
+              const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
+              window.open(url, '_blank');
+          }, function() {
+              alert('Unable to get your location.');
+          });
+      } else {
+          alert('Geolocation is not supported by your browser.');
+      }
+  });
+  </script>
+</body>
+</html>

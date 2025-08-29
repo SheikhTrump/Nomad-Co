@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <title>Admin Messages</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#095b57; --panel:#0f2b33; --card:#14262a; --muted:#9aa6a7; --accent:#06b6a4; --incoming:#20363a;
+    }
+    body{ background:var(--bg); color:#e6f7f5; font-family:"Segoe UI", Roboto, Arial; padding:28px 0; }
+    .content-wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+    .panel{ background:var(--panel); border-radius:12px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .back-link{ color:#bfeee6; text-decoration:none; }
+    .conversation-list{ list-style:none; padding:0; margin:0; }
+    .conversation-item{ 
+      padding:18px;
+      margin-bottom:16px;
+      background:var(--card);
+      border-radius:8px;
+      display:block;
+      text-decoration:none;
+      color:inherit;
+      border-left:4px solid transparent;
+      transition:all 0.2s ease;
+    }
+    .conversation-item:hover{
+      border-left-color:var(--accent);
+      background:#192f34;
+    }
+    .conversation-item.unread{
+      border-left-color:var(--accent);
+    }
+    .user-name{ font-size:1.1rem; font-weight:600; margin:0 0 8px 0; }
+    .conversation-meta{ display:flex; justify-content:space-between; color:var(--muted); font-size:0.85rem; }
+    .no-items{
+      text-align:center;
+      padding:40px 20px;
+      color:var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrap">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0 0 6px 0">User Messages</h2>
+        <div class="meta"><small>View and respond to messages from users</small></div>
+      </div>
+      <div>
+        <a class="back-link" href="{{ url_for('auth.dashboard') }}">Back to dashboard</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <ul class="conversation-list">
+        {% for c in conversations %}
+          {% set user_name = c.get('_user_name') or c.get('user_id') %}
+          {% set conv_id = c.get('_id') or c.get('id') %}
+          {% set unread = c.get('unread_by_admin', False) %}
+          <li>
+            <a href="{{ url_for('admin.message_detail', conv_id=conv_id) }}" class="conversation-item {% if unread %}unread{% endif %}">
+              <h3 class="user-name">{{ user_name }}{% if unread %} <span style="color: var(--accent); font-size: 0.8em;">(New message)</span>{% endif %}</h3>
+              <div class="conversation-meta">
+                <span>{% if c.get('last_message_at') %}Last message:{% endif %}</span>
+                <span>{{ c.get('_last_message_time') }}</span>
+              </div>
+            </a>
+          </li>
+        {% else %}
+          <div class="no-items">
+            <p>No user messages yet.</p>
+          </div>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

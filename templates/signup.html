@@ -1,0 +1,170 @@
+<!-- templates/signup.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - NomadNest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0c5461; 
+            color: #d1d5db;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        .form-control {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+        .form-control:focus {
+            background-color: #4b5563;
+            border-color: #46e0c1;
+            box-shadow: 0 0 0 0.25rem rgba(70, 224, 193, 0.25);
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+            color: #111827;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background-color: #a9ffe5;
+            border-color: #a9ffe5;
+        }
+        a {
+            color: #46e0c1;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #a9ffe5;
+        }
+        .icon-primary {
+            color: #46e0c1;
+        }
+        /* Custom radio button styles */
+        .btn-check:checked + .btn-outline-custom {
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+            color: #111827;
+        }
+        .btn-outline-custom {
+            color: #d1d5db;
+            border-color: #4b5563;
+        }
+        .btn-outline-custom:hover {
+            background-color: #374151;
+            border-color: #46e0c1;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="card w-full max-w-3xl p-8 rounded-2xl shadow-lg">
+        <div class="text-center mb-6">
+            <i class="fas fa-user-plus fa-3x icon-primary"></i>
+            <h2 class="font-bold text-3xl mt-2 text-white">Create Your Profile</h2>
+        </div>
+        
+        <div id="flash-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash-message rounded-md p-4 mb-4 
+                    {% if category == 'danger' %}bg-red-900/50 text-red-300 border border-red-700
+                    {% else %}bg-blue-900/50 text-blue-300 border border-blue-700{% endif %}" role="alert">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+        </div>
+
+        <form action="{{ url_for('auth.signup') }}" method="post" class="space-y-6">
+            <div class="text-center">
+                <label class="block text-sm font-medium text-gray-400 mb-2">I want to sign up as a:</label>
+                <div class="inline-flex rounded-lg shadow-sm">
+                    <input type="radio" class="hidden btn-check" name="role" id="traveler" value="traveler" autocomplete="off" checked>
+                    <label class="btn-outline-custom py-2 px-6 rounded-l-lg cursor-pointer" for="traveler"><i class="fas fa-suitcase-rolling mr-2"></i>Traveler</label>
+                    
+                    <input type="radio" class="hidden btn-check" name="role" id="host" value="host" autocomplete="off">
+                    <label class="btn-outline-custom py-2 px-6 rounded-r-lg cursor-pointer" for="host"><i class="fas fa-home mr-2"></i>Host</label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div><label for="first_name" class="block text-sm font-medium text-gray-400">First Name</label><input type="text" class="mt-1 block w-full rounded-md form-control p-3" id="first_name" name="first_name" required></div>
+                <div><label for="last_name" class="block text-sm font-medium text-gray-400">Last Name</label><input type="text" class="mt-1 block w-full rounded-md form-control p-3" id="last_name" name="last_name" required></div>
+                <div><label for="dob" class="block text-sm font-medium text-gray-400">Date of Birth</label><input type="date" class="mt-1 block w-full rounded-md form-control p-3" id="dob" name="dob" required></div>
+                <div><label for="age" class="block text-sm font-medium text-gray-400">Age</label><input type="number" class="mt-1 block w-full rounded-md form-control p-3 bg-gray-600" id="age" name="age" required readonly></div>
+            </div>
+            
+            <div><label for="nid" class="block text-sm font-medium text-gray-400">NID Number</label><input type="text" class="mt-1 block w-full rounded-md form-control p-3" id="nid" name="nid" required></div>
+            <div><label for="email" class="block text-sm font-medium text-gray-400">Email Address</label><input type="email" class="mt-1 block w-full rounded-md form-control p-3" id="email" name="email" required></div>
+            <div><label for="phone" class="block text-sm font-medium text-gray-400">Phone Number</label><input type="tel" class="mt-1 block w-full rounded-md form-control p-3" id="phone" name="phone" required></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-400">Password</label>
+                    <div class="mt-1 relative"><input type="password" class="block w-full rounded-md form-control p-3 pr-10" id="password" name="password" required><button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-white" onclick="togglePasswordVisibility('password', this)"><i class="fas fa-eye"></i></button></div>
+                </div>
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-gray-400">Confirm Password</label>
+                    <div class="mt-1 relative"><input type="password" class="block w-full rounded-md form-control p-3 pr-10" id="confirm_password" name="confirm_password" required><button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-white" onclick="togglePasswordVisibility('confirm_password', this)"><i class="fas fa-eye"></i></button></div>
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full btn-primary py-3 rounded-lg transition-colors duration-200">Sign Up</button>
+        </form>
+        <p class="text-center text-sm text-gray-400 mt-6">Already have an account? <a href="{{ url_for('auth.login') }}" class="font-semibold">Login</a></p>
+    </div>
+
+    <script>
+        document.getElementById('dob').addEventListener('change', function() {
+            const dob = new Date(this.value);
+            if (isNaN(dob)) { document.getElementById('age').value = ''; return; }
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDifference = today.getMonth() - dob.getMonth();
+            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            document.getElementById('age').value = age >= 0 ? age : 0;
+        });
+
+        function togglePasswordVisibility(fieldId, button) {
+            const passwordField = document.getElementById(fieldId);
+            const icon = button.querySelector('i');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(() => {
+                    message.style.transition = 'opacity 0.5s ease';
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        message.remove();
+                    }, 500);
+                }, 5000); // 5 seconds
+            });
+        });
+    </script>
+</body>
+</html>

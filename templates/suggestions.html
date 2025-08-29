@@ -1,0 +1,62 @@
+<!--templates\suggestions.html-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popular Spots Nearby - NomadNest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0c5461; color: #d1d5db; }
+        .navbar { background-color: rgba(12, 84, 97, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #237e73; }
+        .card { background-color: #1f2937; border: 1px solid #374151; }
+        .btn-primary { background-color: #46e0c1; border-color: #46e0c1; color: #111827; font-weight: bold; }
+        .btn-primary:hover { background-color: #a9ffe5; border-color: #a9ffe5; }
+    </style>
+</head>
+<body>
+    <nav class="navbar sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-2xl font-bold text-white">NomadNest</h1>
+                </div>
+                <div class="flex items-center">
+                    <a href="{{ url_for('auth.dashboard') }}" class="py-2 px-4 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-white text-center mb-8">Popular Spots Nearby</h1>
+        
+        {% if suggestions %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {% for suggestion in suggestions %}
+                <div class="card rounded-lg shadow-lg overflow-hidden flex flex-col">
+                    <img class="h-48 w-full object-cover" src="{{ suggestion.photos[0] if suggestion.photos and suggestion.photos[0].startswith('http') else url_for('static', filename=suggestion.photos[0]) if suggestion.photos else 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image' }}" alt="{{ suggestion.space_title }}">
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h4 class="font-semibold text-white">{{ suggestion.space_title }}</h4>
+                        <p class="text-sm text-gray-400">{{ suggestion.location_city }}</p>
+                        <div class="mt-auto pt-2 flex justify-between items-center">
+                            <p class="font-bold text-teal-400">৳{{ suggestion.price_per_night }}/night</p>
+                            <a href="{{ url_for('space_bp.space_detail', space_id=suggestion._id) }}" class="text-sm text-teal-300 hover:text-white">View</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 card">
+                <i class="far fa-compass fa-3x text-gray-600"></i>
+                <p class="mt-4 text-gray-500">No popular spots to show right now. Book or favorite a space to get started!</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

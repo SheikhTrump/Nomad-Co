@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head><title>Conversations</title></head>
+<body>
+<h2>Conversations</h2>
+<ul>
+  {% set my_id = uid if uid is defined else (current_user.id if current_user.is_authenticated else session.get('user_id')) %}
+  {% for c in conversations %}
+    {% set conv_id = (c._id if c._id is defined else (c.get('_id') if c.get('_id') else (c.id if c.id is defined else c.get('id')))) %}
+    {% set host_id = (c.host_id if c.host_id is defined else c.get('host_id')) %}
+    {% set traveler_id = (c.traveler_id if c.traveler_id is defined else c.get('traveler_id')) %}
+    {% set host_name = c._host_name if c._host_name is defined else (c.get('_host_name') if c.get('_host_name') else host_id) %}
+    {% set trav_name = c._traveler_name if c._traveler_name is defined else (c.get('_traveler_name') if c.get('_traveler_name') else traveler_id) %}
+    {% set space_title = c._space_title if c._space_title is defined else (c.get('_space_title') if c.get('_space_title') else (c.get('space_id') if c.get('space_id') else '')) %}
+    <li>
+      <a href="{{ url_for('chat.conversation_detail', conv_id=conv_id) }}">
+        {% if space_title %}[{{ space_title }}] {% endif %}
+        Conversation: {{ host_name }} ↔ {{ trav_name }}
+      </a>
+    </li>
+  {% else %}
+    <li>No conversations yet.</li>
+  {% endfor %}
+</ul>
+</body>
+</html>

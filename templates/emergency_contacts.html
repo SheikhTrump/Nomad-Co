@@ -1,0 +1,165 @@
+<!-- templates/emergency_contacts.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Contacts - NomadNest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0c5461; 
+            color: #d1d5db;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        .form-control {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+        .form-control:focus {
+            background-color: #4b5563;
+            border-color: #46e0c1;
+            box-shadow: 0 0 0 0.25rem rgba(70, 224, 193, 0.25);
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #46e0c1;
+            border-color: #46e0c1;
+            color: #111827;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background-color: #a9ffe5;
+            border-color: #a9ffe5;
+        }
+        .btn-secondary {
+            background-color: #374151;
+            color: #d1d5db;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Emergency Contacts</h1>
+                <p class="text-gray-400 mt-1">Manage your contacts for safety and peace of mind.</p>
+            </div>
+            <a class="btn-secondary py-2 px-4 rounded-lg font-semibold transition-colors duration-200" href="{{ url_for('auth.dashboard') }}">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+            </a>
+        </div>
+
+        <!-- National Emergency Services Card -->
+        <div class="card rounded-xl p-6 mb-10">
+            <h2 class="text-2xl font-bold text-white mb-4 border-b border-gray-700 pb-3">National Emergency Services (Bangladesh)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="bg-gray-800 p-4 rounded-lg flex items-center">
+                    <i class="fas fa-exclamation-triangle fa-2x text-red-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold text-white">National Emergency Service</h3>
+                        <p class="text-2xl font-bold text-red-400">999</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg flex items-center">
+                    <i class="fas fa-shield-alt fa-2x text-blue-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold text-white">Police</h3>
+                        <p class="text-2xl font-bold text-blue-400">100</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg flex items-center">
+                    <i class="fas fa-fire-extinguisher fa-2x text-orange-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold text-white">Fire Service</h3>
+                        <p class="text-2xl font-bold text-orange-400">101</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg flex items-center">
+                    <i class="fas fa-ambulance fa-2x text-green-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold text-white">Ambulance</h3>
+                        <p class="text-2xl font-bold text-green-400">102</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Contacts Form Card -->
+        <div class="card rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-white mb-4 border-b border-gray-700 pb-3">My Personal Contacts</h2>
+            <form method="POST">
+                <div id="contacts-list" class="space-y-4">
+                    {% for contact in contacts %}
+                    <div class="contact-entry flex flex-col md:flex-row gap-4 items-center">
+                        <input type="text" name="contact_name" value="{{ contact.name }}" placeholder="Full Name" class="w-full rounded-md form-control p-3" required>
+                        <input type="tel" name="contact_phone" value="{{ contact.phone }}" placeholder="Phone Number" class="w-full rounded-md form-control p-3" required>
+                        <input type="text" name="contact_relation" value="{{ contact.relation }}" placeholder="Relation (e.g., Mother)" class="w-full rounded-md form-control p-3">
+                        <button type="button" class="remove-contact-btn btn-danger p-3 rounded-md transition"><i class="fas fa-trash"></i></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-6 border-t border-gray-700 pt-6 flex justify-between items-center">
+                    <button type="button" id="add-contact-btn" class="btn-secondary py-2 px-4 rounded-lg font-semibold transition">
+                        <i class="fas fa-plus mr-2"></i>Add Another Contact
+                    </button>
+                    <button type="submit" class="btn-primary py-2 px-6 rounded-lg transition">Save Contacts</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const contactsList = document.getElementById('contacts-list');
+            
+            function createContactEntry() {
+                const entry = document.createElement('div');
+                entry.className = 'contact-entry flex flex-col md:flex-row gap-4 items-center';
+                entry.innerHTML = `
+                    <input type="text" name="contact_name" placeholder="Full Name" class="w-full rounded-md form-control p-3" required>
+                    <input type="tel" name="contact_phone" placeholder="Phone Number" class="w-full rounded-md form-control p-3" required>
+                    <input type="text" name="contact_relation" placeholder="Relation (e.g., Mother)" class="w-full rounded-md form-control p-3">
+                    <button type="button" class="remove-contact-btn btn-danger p-3 rounded-md transition"><i class="fas fa-trash"></i></button>
+                `;
+                contactsList.appendChild(entry);
+            }
+
+            document.getElementById('add-contact-btn').addEventListener('click', createContactEntry);
+
+            contactsList.addEventListener('click', function(e) {
+                const removeBtn = e.target.closest('.remove-contact-btn');
+                if (removeBtn) {
+                    removeBtn.closest('.contact-entry').remove();
+                }
+            });
+
+            // If no personal contacts are loaded, add one empty entry to start
+            if (contactsList.children.length === 0) {
+                createContactEntry();
+            }
+        });
+    </script>
+</body>
+</html>

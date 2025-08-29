@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+  <title>Conversation with User</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#095b57; --panel:#0f2b33; --card:#14262a; --muted:#9aa6a7; --accent:#06b6a4; --incoming:#20363a;
+    }
+    body{ background:var(--bg); color:#e6f7f5; font-family: "Segoe UI", Roboto, Arial; padding:28px 0; }
+    .chat-wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+    .panel{ background:var(--panel); border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .user-info{ margin-bottom:12px; }
+    .user-info h3{ margin:0; }
+    .space-info{
+      margin-bottom:15px;
+      padding:12px;
+      background:rgba(0,0,0,0.2);
+      border-radius:8px;
+    }
+    .space-info h4{ margin:0 0 4px 0; }
+    .messages-box{ height:62vh; overflow:auto; padding:18px; background:var(--card); border-radius:10px; margin-bottom:14px; }
+    .msg-row{ display:flex; gap:12px; margin-bottom:12px; align-items:flex-start; }
+    .msg-bubble{ max-width:74%; padding:12px 14px; border-radius:12px; line-height:1.3; box-shadow:0 2px 6px rgba(0,0,0,.2); }
+    .incoming .msg-bubble{ background:var(--incoming); color:#dff7f4; border-top-left-radius:4px; }
+    .outgoing{ justify-content:flex-end; }
+    .outgoing .msg-bubble{ background:var(--accent); color:#01302e; border-top-right-radius:4px; }
+    .meta{ font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
+    .sender{ font-weight:700; color:#e9fffb; font-size:0.95rem; display:block; margin-bottom:6px; }
+    .compose{ display:flex; gap:10px; align-items:flex-end; }
+    .compose textarea{ resize:none; border-radius:8px; border:1px solid rgba(255,255,255,.06); background:#0b1b1c; color:#e6f7f5; padding:12px; min-height:56px; width:100%; }
+    .btn-teal{ background:var(--accent); color:#00322e; border:none; padding:10px 16px; border-radius:8px; font-weight:600; }
+    .back-link{ color:#bfeee6; text-decoration:none; } /* no underline */
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+  <div class="chat-wrap">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0 0 6px 0">Conversation with User</h2>
+        <div class="user-info">
+          <h3>{{ conversation.get('_user_name') or conversation.get('user_id') }}</h3>
+        </div>
+      </div>
+      <div>
+        <a class="back-link" href="{{ url_for('admin.messages') }}">
+          <i class="fas fa-arrow-left mr-1"></i> Back to messages
+        </a>
+      </div>
+    </div>
+
+    <div class="panel">
+      {% if space %}
+      <div class="space-info">
+        <h4>Regarding: {{ space.space_title }}</h4>
+        <div>{{ space.location_city }} • ${{ space.price_per_night }} per night</div>
+      </div>
+      {% endif %}
+      
+      <div id="messages" class="messages-box">
+        {% set me = uid if uid is defined else session.get('user_id') %}
+        {% for m in messages %}
+          {% set s_id = (m.sender_id if m.sender_id is defined else m.get('sender_id')) %}
+          {% set sender = (m.sender_name if m.sender_name is defined else (m.get('sender_name') if m.get('sender_name') else (m.get('sender_id') if m.get('sender_id') else 'Unknown'))) %}
+          {% set is_me = (s_id|string) == (me|string) %}
+          <div class="msg-row {% if is_me %}outgoing{% else %}incoming{% endif %}">
+            <div class="msg-bubble" role="article" aria-label="message from {{ sender }}">
+              <span class="sender">{{ sender }}</span>
+              <div class="meta" data-ts="{{ m.get('created_at') }}">{{ m.get('created_at') }}</div>
+              <div>{{ m.get('body') }}</div>
+            </div>
+          </div>
+        {% else %}
+          <p class="meta" style="text-align:center; color:var(--muted); margin-top:20px;">No messages yet.</p>
+        {% endfor %}
+      </div>
+
+      <form class="compose" action="{{ url_for('admin.host_reply_to_message', conv_id=conversation._id) }}" method="post">
+        <textarea name="body" placeholder="Write a reply..." required></textarea>
+        <button class="btn-teal" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+<script>
+  // auto-scroll & format timestamps
+  (function(){
+    const msgs = document.getElementById('messages');
+    if(msgs){
+      // format timestamps found in .meta[data-ts]
+      const metaEls = msgs.querySelectorAll('.meta[data-ts]');
+      function tryParse(ts){
+        if(!ts) return null;
+        // try variants: raw, replace space->T, strip fractional seconds
+        const variants = [
+          ts,
+          ts.replace(' ', 'T'),
+          ts.replace(' ', 'T').replace(/\.\d+$/, '')
+        ];
+        for(const v of variants){
+          const d = new Date(v);
+          if(!isNaN(d.getTime())) return d;
+        }
+        return null;
+      }
+      const fmt = new Intl.DateTimeFormat(undefined, { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+      metaEls.forEach(el=>{
+        const raw = el.getAttribute('data-ts') || '';
+        const d = tryParse(raw);
+        if(d){
+          el.textContent = fmt.format(d);
+        } else {
+          // fallback: show original trimmed
+          el.textContent = raw.toString().substring(0, 25);
+        }
+      });
+      // scroll to bottom
+      msgs.scrollTop = msgs.scrollHeight - msgs.clientHeight;
+    }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+  <title>My Complaints</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#095b57; --panel:#0f2b33; --card:#14262a; --muted:#9aa6a7; --accent:#06b6a4; --incoming:#20363a;
+    }
+    body{ background:var(--bg); color:#e6f7f5; font-family: "Segoe UI", Roboto, Arial; padding:28px 0; }
+    .content-wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+    .panel{ background:var(--panel); border-radius:12px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .back-link{ color:#bfeee6; text-decoration:none; }
+    .complaint-list{ list-style:none; padding:0; margin:0; }
+    .complaint-item{ 
+      padding:18px;
+      margin-bottom:16px;
+      background:var(--card);
+      border-radius:8px;
+      border-left:4px solid var(--accent);
+    }
+    .complaint-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .complaint-subject{ font-size:1.2rem; font-weight:600; margin:0; }
+    .complaint-date{ color:var(--muted); font-size:0.85rem; }
+    .complaint-status{
+      display:inline-block;
+      padding:4px 10px;
+      font-size:0.75rem;
+      border-radius:100px;
+      font-weight:600;
+    }
+    .status-pending{
+      background:rgba(255, 171, 0, 0.15);
+      color:#ffab00;
+    }
+    .status-resolved{
+      background:rgba(75, 210, 143, 0.15);
+      color:#4bd28f;
+    }
+    .complaint-message{
+      color:#c5d8d7;
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,0.08);
+      line-height:1.4;
+      white-space:pre-line;
+    }
+    .btn-teal{ 
+      background:var(--accent); 
+      color:#00322e; 
+      border:none; 
+      padding:10px 18px; 
+      border-radius:8px; 
+      font-weight:600;
+      display:inline-block;
+      text-decoration:none;
+      margin-top:20px;
+    }
+    .no-items{
+      text-align:center;
+      padding:40px 20px;
+      color:var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrap">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0 0 6px 0">My Complaints</h2>
+        <div class="meta"><small>View all complaints you've submitted</small></div>
+      </div>
+      <div>
+        <a class="back-link" href="{{ url_for('auth.dashboard') }}">Back to dashboard</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <ul class="complaint-list">
+        {% for complaint in complaints %}
+          <li class="complaint-item">
+            <div class="complaint-header">
+              <h3 class="complaint-subject">{{ complaint.get('subject') }}</h3>
+              <span class="complaint-status {% if complaint.get('resolved') %}status-resolved{% else %}status-pending{% endif %}">
+                {{ "Resolved" if complaint.get('resolved') else "Pending" }}
+              </span>
+            </div>
+            <div class="complaint-date">
+              Submitted: {{ complaint.get('created_at').strftime('%b %d, %Y') if complaint.get('created_at') else 'Unknown date' }}
+            </div>
+            {% if complaint.get('space_title') %}
+            <div style="margin-top: 8px; font-size: 0.9em; color: #a9ffe5;">
+              <i class="fas fa-home" style="margin-right: 5px;"></i> {{ complaint.get('space_title') }}
+            </div>
+            {% endif %}
+            <div class="complaint-message">{{ complaint.get('message') or complaint.get('body') }}</div>
+          </li>
+        {% else %}
+          <div class="no-items">
+            <p>You haven't submitted any complaints yet.</p>
+          </div>
+        {% endfor %}
+      </ul>
+      
+      <a href="{{ url_for('chat.submit_complaint_form') }}" class="btn-teal">Submit New Complaint</a>
+    </div>
+  </div>
+</body>
+</html>

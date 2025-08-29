@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <title>Complaint Detail</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#095b57; --panel:#0f2b33; --card:#14262a; --muted:#9aa6a7; --accent:#06b6a4; --incoming:#20363a;
+    }
+    body{ background:var(--bg); color:#e6f7f5; font-family: "Segoe UI", Roboto, Arial; padding:28px 0; }
+    .content-wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+    .panel{ background:var(--panel); border-radius:12px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .back-link{ color:#bfeee6; text-decoration:none; }
+    .complaint-header{ margin-bottom:24px; }
+    .complaint-subject{ font-size:1.4rem; font-weight:600; margin:0 0 8px 0; }
+    .complaint-meta{ display:flex; gap:20px; color:var(--muted); font-size:0.9rem; margin-bottom:10px; }
+    .complaint-status{
+      display:inline-block;
+      padding:4px 10px;
+      font-size:0.75rem;
+      border-radius:100px;
+      font-weight:600;
+      margin-left:12px;
+    }
+    .status-pending{
+      background:rgba(255, 171, 0, 0.15);
+      color:#ffab00;
+    }
+    .status-resolved{
+      background:rgba(75, 210, 143, 0.15);
+      color:#4bd28f;
+    }
+    .complaint-content{
+      background:var(--card);
+      padding:20px;
+      border-radius:8px;
+      white-space:pre-line;
+      line-height:1.5;
+      margin-bottom:24px;
+    }
+    .action-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:24px;
+      padding-top:20px;
+      border-top:1px solid rgba(255,255,255,0.1);
+    }
+    .btn{
+      display:inline-block;
+      padding:10px 16px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+      border:none;
+    }
+    .btn-primary{
+      background:var(--accent);
+      color:#00322e;
+    }
+    .btn-secondary{
+      background:#2c4852;
+      color:#e6f7f5;
+    }
+    .btn-danger{
+      background:#e74c3c;
+      color:white;
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrap">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0 0 6px 0">Complaint Details</h2>
+      </div>
+      <div>
+        <a class="back-link" href="{{ url_for('admin.complaints') }}">Back to all complaints</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="complaint-header">
+        <h3 class="complaint-subject">
+          {{ complaint.get('subject') }}
+          <span class="complaint-status {% if complaint.get('resolved') %}status-resolved{% else %}status-pending{% endif %}">
+            {{ "Resolved" if complaint.get('resolved') else "Pending" }}
+          </span>
+        </h3>
+        <div class="complaint-meta">
+          <div>From: {{ complaint.get('_user_name') or complaint.get('user_id') }}</div>
+          <div>Date: {{ complaint.get('created_at').strftime('%b %d, %Y at %H:%M') if complaint.get('created_at') else 'Unknown date' }}</div>
+          {% if complaint.get('resolved') and complaint.get('resolved_at') %}
+            <div>Resolved: {{ complaint.get('resolved_at').strftime('%b %d, %Y at %H:%M') }}</div>
+          {% endif %}
+          
+          {% if complaint.get('space_id') and complaint.get('space_title') %}
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <strong>Related Space:</strong> {{ complaint.get('space_title') }}
+          </div>
+          {% endif %}
+          
+          {% if complaint.get('host_id') %}
+          <div>
+            <strong>Related Host ID:</strong> {{ complaint.get('host_id') }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="complaint-content">
+        {{ complaint.get('message') or complaint.get('body') }}
+      </div>
+      
+      <div class="action-row">
+        <div>
+          {% if not complaint.get('resolved') %}
+            <form action="{{ url_for('admin.resolve_complaint', complaint_id=complaint._id) }}" method="post" style="display:inline">
+              <button type="submit" class="btn btn-primary">Mark as Resolved</button>
+            </form>
+          {% endif %}
+          
+          <a href="{{ url_for('admin.complaints') }}" class="btn btn-secondary">Back to List</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

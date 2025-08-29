@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+  <title>User Complaints</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#095b57; --panel:#0f2b33; --card:#14262a; --muted:#9aa6a7; --accent:#06b6a4; --incoming:#20363a;
+    }
+    body{ background:var(--bg); color:#e6f7f5; font-family:"Segoe UI", Roboto, Arial; padding:28px 0; }
+    .content-wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+    .panel{ background:var(--panel); border-radius:12px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .back-link{ color:#bfeee6; text-decoration:none; }
+    .complaint-list{ list-style:none; padding:0; margin:0; }
+    .complaint-item{ 
+      padding:18px;
+      margin-bottom:16px;
+      background:var(--card);
+      border-radius:8px;
+      display:block;
+      text-decoration:none;
+      color:inherit;
+      border-left:4px solid transparent;
+      transition:all 0.2s ease;
+    }
+    .complaint-item:hover{
+      border-left-color:var(--accent);
+      background:#192f34;
+    }
+    .complaint-item.unresolved{
+      border-left-color:#ff7e50;
+    }
+    .complaint-item.resolved{
+      border-left-color:#4bd28f;
+    }
+    .complaint-header{ display:flex; justify-content:space-between; margin-bottom:8px; }
+    .complaint-subject{ font-size:1.1rem; font-weight:600; margin:0; }
+    .complaint-status{
+      display:inline-block;
+      padding:4px 10px;
+      font-size:0.75rem;
+      border-radius:100px;
+      font-weight:600;
+    }
+    .status-pending{
+      background:rgba(255, 171, 0, 0.15);
+      color:#ffab00;
+    }
+    .status-resolved{
+      background:rgba(75, 210, 143, 0.15);
+      color:#4bd28f;
+    }
+    .complaint-meta{ display:flex; justify-content:space-between; color:var(--muted); font-size:0.85rem; }
+    .no-items{
+      text-align:center;
+      padding:40px 20px;
+      color:var(--muted);
+    }
+    .filter-nav{
+      display:flex;
+      gap:12px;
+      margin-bottom:20px;
+      border-bottom:1px solid rgba(255,255,255,0.1);
+      padding-bottom:10px;
+    }
+    .filter-link{
+      color:var(--muted);
+      text-decoration:none;
+      padding:6px 12px;
+      border-radius:4px;
+      font-size:0.9rem;
+      font-weight:500;
+    }
+    .filter-link.active{
+      background:rgba(6, 182, 164, 0.15);
+      color:#06b6a4;
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrap">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0 0 6px 0">User Complaints</h2>
+        <div class="meta"><small>Review and manage complaints from users</small></div>
+      </div>
+      <div>
+        <a class="back-link" href="{{ url_for('auth.dashboard') }}">Back to dashboard</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="filter-nav">
+        <a href="{{ url_for('admin.complaints') }}" class="filter-link {% if request.args.get('filter') != 'resolved' and request.args.get('filter') != 'unresolved' %}active{% endif %}">All</a>
+        <a href="{{ url_for('admin.complaints', filter='unresolved') }}" class="filter-link {% if request.args.get('filter') == 'unresolved' %}active{% endif %}">Unresolved</a>
+        <a href="{{ url_for('admin.complaints', filter='resolved') }}" class="filter-link {% if request.args.get('filter') == 'resolved' %}active{% endif %}">Resolved</a>
+      </div>
+      
+      <ul class="complaint-list">
+        {% for c in complaints %}
+          {% set user_name = c.get('_user_name') or c.get('user_id') %}
+          {% set complaint_id = c.get('_id') or c.get('id') %}
+          {% set resolved = c.get('resolved') %}
+          <li>
+            <a href="{{ url_for('admin.complaint_detail', complaint_id=complaint_id) }}" class="complaint-item {% if resolved %}resolved{% else %}unresolved{% endif %}">
+              <div class="complaint-header">
+                <h3 class="complaint-subject">{{ c.get('subject') }}</h3>
+                <span class="complaint-status {% if resolved %}status-resolved{% else %}status-pending{% endif %}">
+                  {{ "Resolved" if resolved else "Pending" }}
+                </span>
+              </div>
+              <div class="complaint-meta">
+                <span>From: {{ user_name }}</span>
+                <span>{{ c.get('created_at').strftime('%b %d, %Y') if c.get('created_at') else '' }}</span>
+              </div>
+            </a>
+          </li>
+        {% else %}
+          <div class="no-items">
+            <p>No complaints found.</p>
+          </div>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
