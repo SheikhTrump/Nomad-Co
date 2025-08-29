@@ -2,27 +2,29 @@
 
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <title>{{ space.space_title }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-900 text-gray-100 min-h-screen">
   <div class="max-w-4xl mx-auto py-8 px-4">
     <h1 class="text-3xl font-bold mb-4">{{ space.space_title }}</h1>
 
     <!-- Photos -->
     {% if space.photos %}
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        {% for p in space.photos[:4] %}
-          <!-- FIXED: Logic to handle both full URLs and relative paths -->
-          {% if p.startswith('http') %}
-            <img src="{{ p }}" alt="photo" class="w-full h-48 object-cover rounded">
-          {% else %}
-            <img src="{{ url_for('static', filename=p) }}" alt="photo" class="w-full h-48 object-cover rounded">
-          {% endif %}
-        {% endfor %}
-      </div>
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      {% for p in space.photos[:4] %}
+      <!-- FIXED: Logic to handle both full URLs and relative paths -->
+      {% if p.startswith('http') %}
+      <img src="{{ p }}" alt="photo" class="w-full h-48 object-cover rounded">
+      {% else %}
+      <img src="{{ url_for('static', filename=p) }}" alt="photo" class="w-full h-48 object-cover rounded">
+      {% endif %}
+      {% endfor %}
+    </div>
     {% endif %}
 
     <div class="grid grid-cols-3 gap-6">
@@ -33,7 +35,7 @@
         <h3 class="font-semibold mb-2">Amenities</h3>
         <ul class="list-disc ml-5">
           {% for a in space.amenities %}
-            <li>{{ a }}</li>
+          <li>{{ a }}</li>
           {% endfor %}
         </ul>
       </div>
@@ -43,15 +45,18 @@
         <form action="{{ url_for('space_bp.book_space', space_id=space._id) }}" method="POST">
           <div class="mb-3">
             <label class="block text-sm mb-1">Check-in date</label>
-            <input type="date" name="check_in_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+            <input type="date" name="check_in_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600"
+              required>
           </div>
           <div class="mb-3">
             <label class="block text-sm mb-1">Check-out date</label>
-            <input type="date" name="check_out_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+            <input type="date" name="check_out_date" class="w-full p-2 rounded bg-gray-700 border border-gray-600"
+              required>
           </div>
           <div class="mb-4">
             <label class="block text-sm mb-1">Guests</label>
-            <input type="number" name="guests" min="1" value="1" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+            <input type="number" name="guests" min="1" value="1"
+              class="w-full p-2 rounded bg-gray-700 border border-gray-600">
           </div>
           <button type="submit" class="w-full py-2 bg-teal-500 rounded text-black font-semibold">Book</button>
         </form>
@@ -61,15 +66,26 @@
       </aside>
     </div>
 
-    <!-- Debug coordinates -->
-    {% if space.latitude and space.longitude %}
-      <p>Lat: {{ space.latitude }} | Lng: {{ space.longitude }}</p>
-    {% endif %}
+    <!-- Add Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <div id="map" style="height: 400px;"></div>
 
     <!-- Navigation Button -->
-    {% if space.map_url %}
-      <a href="{{ space.map_url }}" target="_blank" class="btn btn-primary">Navigate</a>
-    {% endif %}
-  </div>
+    <a href="https://www.google.com/maps/dir/?api=1&destination={{ space.latitude }},{{ space.longitude }}"
+      target="_blank" class="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+      Navigate to this Space
+    </a>
+
+    <!-- Add Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+      var map = L.map('map').setView([{{ space.latitude }}, { { space.longitude } }], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      L.marker([{{ space.latitude }}, {{ space.longitude }}]).addTo(map)
+        .bindPopup('This Space Location').openPopup();
+    </script>
 </body>
+
 </html>

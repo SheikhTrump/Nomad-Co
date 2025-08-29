@@ -21,9 +21,10 @@ except Exception as e:
 
 def create_space(space_data):
     space_data["created_at"] = datetime.utcnow()
-    
+    '''
     if "latitude" in space_data and "longitude" in space_data:
         space_data["map_url"] = f"https://www.google.com/maps?q={space_data['latitude']},{space_data['longitude']}"
+        '''
     return spaces_collection.insert_one(space_data)
 
 def get_all_spaces():
@@ -224,24 +225,6 @@ def reset_sample_spaces():
     print(f"Deleted {deleted} existing spaces. Reinserting samples...")
     add_sample_spaces()
 
-def extract_lat_lng_from_map_url(map_url):
-    """
-    Extracts latitude and longitude from a Google Maps URL.
-    Supports formats like:
-    - https://www.google.com/maps?q=lat,lng
-    - https://www.google.com/maps/place/.../@lat,lng,...
-    - https://maps.google.com/?q=lat,lng
-    Returns (lat, lng) as floats, or (None, None) if not found.
-    """
-    # Try ?q=lat,lng
-    match = re.search(r'[?&]q=([-.\d]+),([-.\d]+)', map_url)
-    if match:
-        return float(match.group(1)), float(match.group(2))
-    # Try /@lat,lng
-    match = re.search(r'/@([-.\d]+),([-.\d]+)', map_url)
-    if match:
-        return float(match.group(1)), float(match.group(2))
-    return None, None
 
 def create_space_from_args(
     host_id,
