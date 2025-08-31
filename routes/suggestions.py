@@ -1,4 +1,4 @@
-#routes\suggestions.py
+# routes\suggestions.py
 
 from flask import Blueprint, render_template, session, redirect, url_for, flash
 

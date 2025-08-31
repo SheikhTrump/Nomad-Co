@@ -1,4 +1,4 @@
-#routes\analytics.py
+# routes\analytics.py
 # Ei file ta admin er analytics dashboard page er jonno route define kore.
 
 from flask import Blueprint, render_template, session, redirect, url_for, flash

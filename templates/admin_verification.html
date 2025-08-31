@@ -1,0 +1,108 @@
+<!-- templates/admin_verification.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Verifications - NomadNest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0c5461; 
+            color: #d1d5db;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        .btn-nav {
+            background-color: #374151;
+            color: #d1d5db;
+        }
+        .btn-nav:hover {
+            background-color: #4b5563;
+        }
+        .btn-success {
+            background-color: #16a34a;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Pending Host Verifications</h1>
+                <p class="text-gray-400 mt-1">Review and approve new host identity submissions.</p>
+            </div>
+            <a class="btn-nav py-2 px-4 rounded-lg font-semibold transition-colors duration-200" href="{{ url_for('auth.dashboard') }}">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Verification List -->
+        <div class="space-y-6">
+            {% if pending_hosts %}
+                {% for host in pending_hosts %}
+                <div class="card rounded-xl p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Host Info -->
+                        <div class="md:col-span-1">
+                            <h2 class="text-xl font-bold text-white">{{ host.first_name }} {{ host.last_name }}</h2>
+                            <p class="text-gray-400">{{ host.email }}</p>
+                            <p class="text-sm text-gray-500 mt-1">User ID: {{ host.user_id }}</p>
+                        </div>
+
+                        <!-- Verification Images -->
+                        <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <h3 class="font-semibold text-gray-300 mb-2">NID Photo</h3>
+                                {% if host.nid_exists %}
+                                    <img src="{{ url_for('static', filename=host.verification.nid_photo.replace('static/', '')) }}" alt="NID Photo" class="rounded-lg border-2 border-gray-600 w-full">
+                                {% else %}
+                                    <div class="flex items-center justify-center h-32 bg-gray-800 rounded-lg text-red-400">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i> Image not found
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-300 mb-2">User Photo</h3>
+                                 {% if host.own_exists %}
+                                    <img src="{{ url_for('static', filename=host.verification.own_photo.replace('static/', '')) }}" alt="User Photo" class="rounded-lg border-2 border-gray-600 w-full">
+                                {% else %}
+                                     <div class="flex items-center justify-center h-32 bg-gray-800 rounded-lg text-red-400">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i> Image not found
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Action Button -->
+                    <div class="mt-6 border-t border-gray-700 pt-4 flex justify-end">
+                        <form action="{{ url_for('admin_bp.verify_host', user_id=host._id) }}" method="POST">
+                            <button type="submit" class="btn-success font-bold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-check-circle mr-2"></i>Approve Host
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card rounded-xl p-12 text-center">
+                    <i class="fas fa-folder-open fa-3x text-gray-600"></i>
+                    <p class="mt-4 text-gray-500">There are no pending host verifications at this time.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

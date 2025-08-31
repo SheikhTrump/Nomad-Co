@@ -1,5 +1,3 @@
-
-
 import os
 import re
 from flask import Blueprint, current_app, request, redirect, url_for, flash, session, render_template, jsonify
@@ -7,7 +5,7 @@ from werkzeug.utils import secure_filename
 from bson.objectid import ObjectId
 
 # Bivinno model theke proyojonio function gulo import kora hocche.
-from models.space import cancel_booking_in_space
+# FIXED: Removed the non-existent 'cancel_booking_in_space' import
 from models.traveler_profile import (
     update_traveler_profile_info,
     get_user_profile,
@@ -35,27 +33,26 @@ def view_traveler_profile():
     if 'user_id' not in session or session.get('role') != 'traveler':
         flash('You must be logged in as a traveler to view this page.', 'danger')
         return redirect(url_for('auth.login'))
-    
-    user = db.users.find_one({'_id': ObjectId(session['user_id'])})
-    if not user:
+
+    # Use the _id from session for reliable lookups
+    user_mongo_id = session['user_id']
+    try:
+        profile_data = get_user_profile(user_mongo_id)
+    except Exception:
         flash('Could not find your profile data.', 'danger')
         return redirect(url_for('auth.logout'))
-    user_id = user['user_id']
-    profile_data = get_user_profile(user_id)
-    '''
-    user_id = session['user_id']
-    # Model theke profile data, favorite spaces, reviews, etc. fetch kora hocche.
-    profile_data = get_user_profile(user_id)
-    '''
+
     if not profile_data:
         flash('Could not find your profile data.', 'danger')
         return redirect(url_for('auth.logout'))
     
 
-    favorite_spaces = get_user_favorite_spaces(user_id)
-    my_reviews = get_reviews_by_user(user_id)
-    booking_history_data = list(db.bookings.find({'user_id': user_id}))
-    emergency_contacts_data = get_emergency_contacts(user_id)
+    # FIX: Use the correct user_mongo_id for all data fetching
+    favorite_spaces = get_user_favorite_spaces(user_mongo_id)
+    my_reviews = get_reviews_by_user(user_mongo_id)
+    booking_history_data = list(db.bookings.find({'user_id': user_mongo_id}))
+    emergency_contacts_data = get_emergency_contacts(user_mongo_id)
+
 
     # 'traveler_profile.html' template ta shob data shoho render kora hocche.
     return render_template(
@@ -77,7 +74,7 @@ def update_profile():
     # AJAX request kina check korche.
     is_ajax = 'application/json' in request.headers.get('Accept', '')
 
-    user_id = session['user_id']
+    user_mongo_id = session['user_id']
     new_profile_pic_path = None
 
     # Profile picture upload handle kora hocche.
@@ -93,7 +90,7 @@ def update_profile():
 
     try:
         # Model function call kore database e data update kora hocche.
-        update_traveler_profile_info(user_id, form_data, new_profile_pic_path)
+        update_traveler_profile_info(user_mongo_id, form_data, new_profile_pic_path)
         flash('Profile successfully updated!', 'success')
         if is_ajax:
             return jsonify({'success': True})
@@ -111,7 +108,8 @@ def emergency_contacts():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('auth.login'))
     
-    user_id = session['user_id']
+    user_mongo_id = session['user_id']
+    
     if request.method == 'POST':
         contacts = []
         # Form theke prottekta contact er name, phone, relation neya hocche.
@@ -122,13 +120,13 @@ def emergency_contacts():
             if n and p: # Jodi naam ebong phone number deya thake.
                 contacts.append({'name': n, 'phone': p, 'relation': r})
         # Database e update kora hocche.
-        update_emergency_contacts(user_id, contacts)
+        update_emergency_contacts(user_mongo_id, contacts)
         flash('Emergency contacts updated!', 'success')
         return redirect(url_for('traveler_profiles.view_traveler_profile'))
     
     # GET request er jonno, current contact gulo fetch kore form dekhano hocche.
-    contacts = get_emergency_contacts(user_id)
-    return render_template('emergency_contacts.html', contacts=contacts)
+    contacts_data = get_emergency_contacts(user_mongo_id)
+    return render_template('emergency_contacts.html', contacts=contacts_data)
 
 @traveler_profiles_bp.route("/profile/booking_history")
 def booking_history():
@@ -137,8 +135,9 @@ def booking_history():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('auth.login'))
     
-    user_id = session['user_id']
-    history = list(db.bookings.find({'user_id': user_id}))
+    user_mongo_id = session['user_id']
+    # FIX: Query bookings using the correct user_mongo_id
+    history = list(db.bookings.find({'user_id': user_mongo_id}))
     
     # Session theke suggested space (jodi thake) neya hocche.
     suggested_spaces = session.get('suggested_spaces', None)
@@ -174,13 +173,13 @@ def cancel_booking_profile(booking_id):
         flash('Please sign in as a traveller to cancel bookings.', 'warning')
         return redirect(url_for('auth.login'))
 
-    user_id = session['user_id']
+    user_mongo_id = session['user_id']
 
     body = request.get_json(silent=True) or {}
     candidate = booking_id or request.form.get('booking_id') or request.args.get('booking_id') or body.get('booking_id')
     bid = _extract_id_like(candidate)
 
-    current_app.logger.debug("cancel_booking_profile called: booking_id=%s user_id=%s method=%s", bid, user_id, request.method)
+    current_app.logger.debug("cancel_booking_profile called: booking_id=%s user_id=%s method=%s", bid, user_mongo_id, request.method)
 
     if not bid:
         msg = 'Invalid booking selected.'
@@ -191,8 +190,9 @@ def cancel_booking_profile(booking_id):
 
     try:
         # Database e booking er status "Cancelled" e update kora hocche.
+        # FIX: Query with the correct user_mongo_id
         result = db.bookings.update_one(
-            {"booking_id": bid, "user_id": user_id}, # Shudhu ei user er booking e cancel korte parbe.
+            {"booking_id": bid, "user_id": user_mongo_id}, # Shudhu ei user er booking e cancel korte parbe.
             {"$set": {"status": "Cancelled"}}
         )
         success = result.modified_count > 0 # Jodi ekta document o update hoy, tahole success.
@@ -208,4 +208,3 @@ def cancel_booking_profile(booking_id):
 
     flash(msg, 'success' if success else 'warning')
     return redirect(url_for('traveler_profiles.booking_history'))
-

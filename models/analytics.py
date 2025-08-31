@@ -30,143 +30,132 @@ def get_booking_overview():
 
     for booking in all_bookings:
         try:
-            check_in = datetime.strptime(booking['check_in_date'], '%Y-m-%d')
-            check_out = datetime.strptime(booking['check_out_date'], '%Y-%m-%d')
-            duration = max(1, (check_out - check_in).days)
-            total_revenue += booking.get('price_per_night', 0) * duration
-        except (ValueError, TypeError, KeyError):
-            continue 
+            # Safely handle both string and datetime objects
+            check_in_str = booking.get('check_in_date')
+            if isinstance(check_in_str, datetime):
+                check_in = check_in_str
+            else:
+                check_in = datetime.strptime(check_in_str, '%Y-%m-%d')
 
-        try:
-            # space_id diye 'spaces' collection theke space er details khuje ber kora hocche.
-            space = db.spaces.find_one({"_id": ObjectId(booking["space_id"])})
-            if space:
-                # Jodi location_city na thake, tahole 'Unknown' hishebe dhora hocche.
-                city = space.get("location_city", "Unknown")
-                city_counts[city] = city_counts.get(city, 0) + 1
-        except (TypeError, KeyError):
+            check_out_str = booking.get('check_out_date')
+            if isinstance(check_out_str, datetime):
+                check_out = check_out_str
+            else:
+                check_out = datetime.strptime(check_out_str, '%Y-%m-%d')
+            
+            duration = (check_out - check_in).days
+            price = float(booking.get('price_per_night', 0))
+            total_revenue += duration * price
+            
+            space_id = booking.get('space_id')
+            if space_id:
+                space = db.spaces.find_one({'_id': ObjectId(space_id)})
+                if space:
+                    city = space.get('location_city')
+                    if city:
+                        city_counts[city] = city_counts.get(city, 0) + 1
+        except (ValueError, TypeError, KeyError) as e:
+            print(f"Skipping booking due to data error: {e}")
             continue
-
+            
     return {
         "total_bookings": total_bookings,
         "total_revenue": total_revenue,
-        "city_counts": city_counts
+        "city_distribution": city_counts
     }
 
+
 def get_advanced_analytics():
-    """
-    MongoDB aggregation pipeline use kore advanced analytics data calculate kore.
-    Eta onek beshi efficient ebong ek sathe onek data process kore.
-    """
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    """Platform er shob important metrics calculate korar jonno aggregation pipeline use kore."""
     
-    # --- Active Users (goto 30 diner moddhe login koreche) ---
+    # --- Active Users (last 30 days) ---
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     active_users = db.users.count_documents({"last_login": {"$gte": thirty_days_ago}})
 
-    # --- New Users This Month (ei mashe jara sign up koreche) ---
-    today = datetime.utcnow()
-    start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # --- New Users (this month) ---
+    start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     new_users_this_month = db.users.count_documents({"created_at": {"$gte": start_of_month}})
-    
-    # --- Booking Statistics (Lead time, Duration, Cancellation Rate) ---
-    # Ekti pipeline diye booking er shob hishab kora hocche.
+
+    # --- Booking Statistics (using aggregation for efficiency) ---
     booking_stats_pipeline = [
-        {"$match": {"booking_date": {"$exists": True, "$ne": None}}}, # Shudhu booking_date ache emon document neya hocche.
+        {"$match": {"status": "Confirmed"}},
         {"$project": {
-            "status": 1,
-            # Booking dewa theke check-in porjonto shomoy (lead time).
-            "lead_time": {
-                "$dateDiff": {
-                    "startDate": {"$toDate": "$booking_date"},
-                    "endDate": {"$toDate": "$check_in_date"},
-                    "unit": "day"
-                }
-            },
-            # Koto din er jonno booking (duration).
-            "duration": {
-                "$dateDiff": {
-                    "startDate": {"$toDate": "$check_in_date"},
-                    "endDate": {"$toDate": "$check_out_date"},
-                    "unit": "day"
-                }
-            },
-            # Prottekta booking theke total revenue.
-             "booking_revenue": {
-                "$multiply": [
-                    "$price_per_night",
-                    {"$max": [1, {"$dateDiff": {"startDate": {"$toDate": "$check_in_date"}, "endDate": {"$toDate": "$check_out_date"}, "unit": "day"}}]}
-                ]
-            }
+            "check_in": {"$toDate": "$check_in_date"},
+            "check_out": {"$toDate": "$check_out_date"},
+            "booked_at": {"$toDate": "$booked_at"},
+            "price": {"$toDouble": "$price_per_night"},
+            "user_id": "$user_id",
+             "host_id": "$host_id"
         }},
         {"$group": {
-            "_id": None, # Shob document er jonno ekta result.
+            "_id": None,
             "total_bookings": {"$sum": 1},
-            "total_lead_time": {"$sum": "$lead_time"},
-            "total_duration": {"$sum": "$duration"},
-            "total_revenue": {"$sum": "$booking_revenue"},
-            # Jodi status "Cancelled" hoy, tahole 1 jog hobe.
-            "cancelled_bookings": {"$sum": {"$cond": [{"$eq": ["$status", "Cancelled"]}, 1, 0]}}
+            "total_revenue": {"$sum": {
+                "$multiply": ["$price", {"$max": [1, {"$dateDiff": {"startDate": "$check_in", "endDate": "$check_out", "unit": "day"}}]}]
+            }},
+            "total_duration": {"$sum": {"$dateDiff": {"startDate": "$check_in", "endDate": "$check_out", "unit": "day"}}},
+            "total_lead_time": {"$sum": {"$dateDiff": {"startDate": "$booked_at", "endDate": "$check_in", "unit": "day"}}},
+            "unique_bookers": {"$addToSet": "$user_id"}
+        }},
+        {"$project": {
+            "_id": 0,
+            "total_bookings": 1,
+            "total_revenue": 1,
+            "total_duration": 1,
+            "total_lead_time": 1,
+            "unique_booker_count": {"$size": "$unique_bookers"}
         }}
     ]
     booking_stats_result = list(db.bookings.aggregate(booking_stats_pipeline))
     booking_stats = booking_stats_result[0] if booking_stats_result else {
-        "total_bookings": 0, "total_lead_time": 0, "total_duration": 0,
-        "total_revenue": 0, "cancelled_bookings": 0
+        "total_bookings": 0, "total_revenue": 0, "total_duration": 0, 
+        "total_lead_time": 0, "unique_booker_count": 0
     }
 
+    # --- Cancellation Rate ---
+    total_bookings = db.bookings.count_documents({})
+    cancelled_bookings = db.bookings.count_documents({"status": "Cancelled"})
+    booking_stats['cancelled_bookings'] = cancelled_bookings
+    
     # --- Repeat Booker Rate ---
-    booker_pipeline = [
-        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}, # Prottek user koto gulo booking koreche.
-        {"$group": {
-            "_id": None,
-            "total_bookers": {"$sum": 1}, # Total koto jon user booking koreche.
-            "repeat_bookers": {"$sum": {"$cond": [{"$gt": ["$count", 1]}, 1, 0]}} # Tar moddhe kotojon 1 bar er beshi koreche.
-        }}
+    repeat_bookers_pipeline = [
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gt": 1}}}
     ]
-    booker_stats_result = list(db.bookings.aggregate(booker_pipeline))
-    repeat_rate = 0
-    if booker_stats_result and booker_stats_result[0]['total_bookers'] > 0:
-        stats = booker_stats_result[0]
-        repeat_rate = (stats['repeat_bookers'] / stats['total_bookers']) * 100
+    repeat_bookers = len(list(db.bookings.aggregate(repeat_bookers_pipeline)))
+    repeat_rate = (repeat_bookers / booking_stats['unique_booker_count'] * 100) if booking_stats['unique_booker_count'] > 0 else 0
 
-    # --- Most Booked 5 Spaces ---
+    # --- Most Booked Spaces ---
     most_booked_pipeline = [
         {"$group": {"_id": "$space_title", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 5}
     ]
     most_booked_spaces = list(db.bookings.aggregate(most_booked_pipeline))
-
+    
     # --- Revenue by Location ---
     revenue_by_location_pipeline = [
-        {
-            "$project": {
-                "space_id": {"$toObjectId": "$space_id"},
-                "booking_revenue": {
-                    "$multiply": [
-                        "$price_per_night",
-                        {"$max": [1, {"$dateDiff": {"startDate": {"$toDate": "$check_in_date"}, "endDate": {"$toDate": "$check_out_date"}, "unit": "day"}}]}
-                    ]
-                }
+        {"$match": {"status": "Confirmed"}},
+        {"$project": {
+            "space_id_obj": {"$toObjectId": "$space_id"},
+            "revenue": {
+                "$multiply": [
+                    {"$toDouble": "$price_per_night"},
+                    {"$max": [1, {"$dateDiff": {"startDate": {"$toDate": "$check_in_date"}, "endDate": {"$toDate": "$check_out_date"}, "unit": "day"}}]}
+                ]
             }
-        },
-        {
-            # 'bookings' collection er sathe 'spaces' collection ke join kora hocche.
-            "$lookup": {
-                "from": "spaces",
-                "localField": "space_id",
-                "foreignField": "_id",
-                "as": "space_details"
-            }
-        },
-        {"$unwind": "$space_details"},
-        {
-            # Location city onujayi group kore total revenue ber kora hocche.
-            "$group": {
-                "_id": "$space_details.location_city",
-                "total_revenue": {"$sum": "$booking_revenue"}
-            }
-        },
+        }},
+        {"$lookup": {
+            "from": "spaces",
+            "localField": "space_id_obj",
+            "foreignField": "_id",
+            "as": "space_info"
+        }},
+        {"$unwind": "$space_info"},
+        {"$group": {
+            "_id": "$space_info.location_city",
+            "total_revenue": {"$sum": "$revenue"}
+        }},
         {"$sort": {"total_revenue": -1}}
     ]
     revenue_by_location = list(db.bookings.aggregate(revenue_by_location_pipeline))
@@ -179,12 +168,9 @@ def get_advanced_analytics():
     ]
     top_locations = list(db.spaces.aggregate(top_locations_pipeline))
 
-    # --- Top 5 Spaces by Average Rating ---
+    # --- Top Spaces by Average Rating ---
     top_spaces_pipeline = [
-        {"$group": {
-            "_id": "$space_id",
-            "average_rating": {"$avg": "$rating"}
-        }},
+        {"$group": {"_id": "$space_id", "average_rating": {"$avg": "$rating"}}},
         {"$sort": {"average_rating": -1}},
         {"$limit": 5},
         {"$lookup": {
@@ -194,10 +180,7 @@ def get_advanced_analytics():
             "as": "space_details"
         }},
         {"$unwind": "$space_details"},
-        {"$project": {
-            "_id": "$space_details.space_title",
-            "average_rating": {"$round": ["$average_rating", 1]} # Rating 1 decimal place e round kora hocche.
-        }}
+        {"$project": {"_id": "$space_details.space_title", "average_rating": 1}}
     ]
     top_spaces = list(db.reviews.aggregate(top_spaces_pipeline))
     
@@ -214,16 +197,32 @@ def get_advanced_analytics():
     top_hosts_pipeline = [
         {"$match": {"status": "Confirmed"}},
         {"$project": {
-            "host_id": 1,
+            # Conditionally convert host_id, handle invalid formats gracefully
+            "host_id_obj": {
+                "$cond": {
+                    "if": {"$eq": [{"$strLenBytes": "$host_id"}, 24]},
+                    "then": {"$toObjectId": "$host_id"},
+                    "else": None  # Set to null if it's not a 24-char string
+                }
+            },
             "booking_revenue": {
                 "$multiply": [
-                    "$price_per_night",
+                    {"$toDouble": "$price_per_night"},
                     {"$max": [1, {"$dateDiff": {"startDate": {"$toDate": "$check_in_date"}, "endDate": {"$toDate": "$check_out_date"}, "unit": "day"}}]}
                 ]
             }
         }},
+        # Filter out documents where the host_id was invalid
+        {"$match": {"host_id_obj": {"$ne": None}}},
+        {"$lookup": {
+            "from": "users",
+            "localField": "host_id_obj",
+            "foreignField": "_id",
+            "as": "host_info"
+        }},
+        {"$unwind": "$host_info"},
         {"$group": {
-            "_id": "$host_id",
+            "_id": "$host_info.user_id",
             "total_revenue": {"$sum": "$booking_revenue"}
         }},
         {"$sort": {"total_revenue": -1}},
@@ -252,6 +251,7 @@ def get_recent_signups(limit=5):
 
 def get_recent_bookings(limit=5):
     """Shobcheye recent booking gular list dey."""
-    # 'bookings' collection theke 'booking_date' field er upor base kore sort kora hocche.
-    return list(db.bookings.find().sort("booking_date", -1).limit(limit))
+    # 'bookings' collection theke 'booked_at' field er upor base kore sort kora hocche.
+    return list(db.bookings.find().sort("booked_at", -1).limit(limit))
+
 
