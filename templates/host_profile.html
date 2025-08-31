@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rent your space</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-3xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold mb-4">Space Profile</h2>
+
+        <form action="" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <input type="text" name="name" placeholder="Space Name" class="border p-2 w-full" required>
+            <textarea name="description" placeholder="Description" class="border p-2 w-full" required></textarea>
+            <input type="number" step="0.01" name="price_per_month" placeholder="Price per Month" class="border p-2 w-full" required>
+            <input type="text" name="location_city" placeholder="City" class="border p-2 w-full" required>
+
+            <select name="space_type" class="border p-2 w-full">
+                <option value="Private Room">Private Room</option>
+                <option value="Shared Room">Shared Room</option>
+                <option value="Full Apartment">Full Apartment</option>
+            </select>
+
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" name="has_coworking_space">
+                <span>Has Coworking Space</span>
+            </label>
+
+            <label>Amenities:</label><br>
+            <input type="checkbox" name="amenities" value="WiFi"> WiFi
+            <input type="checkbox" name="amenities" value="Air Conditioning"> Air Conditioning
+            <input type="checkbox" name="amenities" value="Kitchen"> Kitchen
+
+            <label>Upload Photos:</label>
+            <input type="file" name="photos" multiple class="border p-2 w-full">
+
+            <!-- Google Map Picker -->
+            <label>Pin Location on Map:</label>
+            <div id="map" style="height: 300px;" class="border"></div>
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create</button>
+        </form>
+    </div>
+
+    <script>
+        function initMap() {
+            var defaultLocation = { lat: 23.8103, lng: 90.4125 }; // Dhaka
+
+            var map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 7,
+                center: defaultLocation
+            });
+
+            var marker = new google.maps.Marker({
+                position: defaultLocation,
+                map: map,
+                draggable: true
+            });
+
+            // Update hidden fields when marker is dragged
+            google.maps.event.addListener(marker, 'dragend', function (event) {
+                document.getElementById("latitude").value = event.latLng.lat();
+                document.getElementById("longitude").value = event.latLng.lng();
+            });
+
+            // Click on map to move marker
+            google.maps.event.addListener(map, 'click', function (event) {
+                marker.setPosition(event.latLng);
+                document.getElementById("latitude").value = event.latLng.lat();
+                document.getElementById("longitude").value = event.latLng.lng();
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>

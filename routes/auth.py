@@ -2,8 +2,9 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, make_response
 from werkzeug.security import check_password_hash
-from models.user import create_user, find_user_by_login, update_last_login
-
+from models.user import create_user, find_user_by_login, update_last_login, db
+from models.traveler_profile import get_user_profile
+from bson.objectid import ObjectId
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -40,6 +41,14 @@ def signup():
 
         try:
             new_user_id = create_user(form_data)
+            # The session user_id should be the mongo _id for lookups, but the custom id is shown to the user
+            user = find_user_by_login(new_user_id) # Find the user to get their _id
+            if user:
+                 session['user_id'] = str(user.get('_id'))
+            else:
+                # Fallback in case user is not found immediately after creation
+                session['user_id'] = new_user_id
+
             flash(f'Account created successfully! Your User ID is {new_user_id}', 'success')
             return redirect(url_for('auth.login'))
         except Exception as e:
@@ -72,7 +81,7 @@ def login():
         user = find_user_by_login(login_identifier)
         if user and check_password_hash(user['password'], password):
             session['role'] = user['role']
-            session['user_id'] = user['user_id']
+            session['user_id'] = str(user['_id'])
             session['first_name'] = user['first_name']
             
             # Update last_login timestamp on successful login
@@ -94,12 +103,31 @@ def login():
     response.headers['Expires'] = '0'
     return response
 
-
 @auth_bp.route('/dashboard')
 def dashboard():
-    if 'role' not in session:
+    dashboard_data = {}
+    if 'user_id' not in session:
+        flash('You need to be logged in to view the dashboard.', 'warning')
         return redirect(url_for('auth.login'))
-    return render_template('dashboard.html')
+        
+    if session.get('role') == 'admin':
+        dashboard_data['pending_hosts'] = list(db.users.find({
+            "role": "host",
+            "verification.status": "pending"
+        }))
+        # You can add more admin-specific data here
+    else:
+        try:
+            user = db.users.find_one({'_id': ObjectId(session['user_id'])})
+            dashboard_data['user'] = user
+        except Exception:
+            user = None
+            # If ObjectId fails, it might be the custom ID, handle accordingly or log out
+            session.clear()
+            flash('There was an error with your session. Please log in again.', 'danger')
+            return redirect(url_for('auth.login'))
+
+    return render_template('dashboard.html', **dashboard_data)
 
 
 @auth_bp.route('/logout')

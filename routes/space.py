@@ -14,7 +14,8 @@ from models.space import (
     update_space, 
     filter_spaces,
     get_all_spaces,
-    get_popular_spaces_in_location
+    get_popular_spaces_in_location,
+    delete_space
 )
 from models.review import get_average_rating_for_space
 from models.user import db
@@ -118,7 +119,7 @@ def create_space():
     if request.method == 'GET':
         return render_template("create_space_form.html")
 
-    # POST method logic
+    
     try:
         price = float(request.form.get("price_per_night"))
     except (ValueError, TypeError):
@@ -127,7 +128,7 @@ def create_space():
 
     photos_urls = []
     if "photos" in request.files:
-        for file in request.files.getlist("photos"):
+        for file in request.files.getlist("photos"): 
             if file and file.filename:
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(upload_folder, filename)
@@ -145,7 +146,8 @@ def create_space():
         "photos": photos_urls,
         "space_type": request.form.get("space_type"),
         "has_coworking_space": "has_coworking_space" in request.form,
-        "wifi_speed_mbps": 50
+        "wifi_speed_mbps": 50,
+        "map_url": request.form.get("map_url")
     }
 
     result = create_space_in_db(space_data)
@@ -285,3 +287,23 @@ def api_get_all_spaces():
     spaces_cursor = get_all_spaces()
     spaces_list = [_unwrap_and_normalize_space_obj(space) for space in spaces_cursor]
     return jsonify(spaces_list)
+
+@space_bp.route('/spaces/delete/<space_id>', methods=['POST'])
+def delete_space_route(space_id):
+    """
+    Deletes a space owned by the currently logged-in host.
+    """
+    if session.get('role') != 'host':
+        flash("You must be a host to delete a space.", "danger")
+        return redirect(url_for('auth.dashboard'))
+
+    space = get_space_by_id(space_id)
+    if not space or str(space.get('host_id')) != str(session.get('user_id')):
+        flash("You are not authorized to delete this space or it does not exist.", "danger")
+        return redirect(url_for('space_bp.get_my_spaces_route'))
+
+   
+    delete_space(space_id)
+
+    flash("Space deleted successfully!", "success")
+    return redirect(url_for('space_bp.get_my_spaces_route'))

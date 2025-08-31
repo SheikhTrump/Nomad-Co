@@ -3,9 +3,10 @@
 
 from pymongo import MongoClient, ReturnDocument
 from werkzeug.security import generate_password_hash
-from bson.objectid import ObjectId
+from bson.objectid import ObjectId, InvalidId
 import os
 from datetime import datetime
+from flask import session
 
 
 # MongoDB Connection
@@ -68,7 +69,12 @@ def create_user(data):
         "password": hashed_password,
         "role": data['role'],
         "created_at": datetime.utcnow(),  # User toirir shomoy
-        "last_login": None # Prothome last_login null thakbe
+        "last_login": None, # Prothome last_login null thakbe
+        "verification": {
+            "status": "not_submitted",
+            "nid_photo": "",
+            "own_photo": ""
+        }
     }
     # Notun user document ta 'users' collection e insert kora hocche.
     users_collection.insert_one(user_document)
@@ -91,3 +97,58 @@ def update_last_login(user_id):
         {"user_id": user_id},
         {"$set": {"last_login": datetime.utcnow()}}
     )
+
+
+def submit_verification_photos(user_id, nid_photo, own_photo):
+    
+    upload_folder = "static/uploads"
+    os.makedirs(upload_folder, exist_ok=True)
+    nid_filename = f"nid_{user_id}.jpg"
+    own_filename = f"own_{user_id}.jpg"
+    nid_path = f"{upload_folder}/{nid_filename}"
+    own_path = f"{upload_folder}/{own_filename}"
+    nid_photo.save(nid_path)
+    own_photo.save(own_path)
+    
+    if is_valid_objectid(user_id):
+        db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "verification": {
+                    "nid_photo": nid_path,
+                    "own_photo": own_path,
+                    "status": "pending"
+                }
+            }}
+        )
+    else:
+        db.users.update_one(
+            {"_id": user_id},
+            {"$set": {
+                "verification": {
+                    "nid_photo": nid_path,
+                    "own_photo": own_path,
+                    "status": "pending"
+                }
+            }}
+        )
+
+
+def is_valid_objectid(oid):
+    try:
+        ObjectId(oid)
+        return True
+    except (InvalidId, TypeError):
+        return False
+
+
+def get_current_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    if is_valid_objectid(user_id):
+        return db.users.find_one({"_id": ObjectId(user_id)})
+    else:
+        # Assuming user_id could be the custom 'nomad_id'
+        return db.users.find_one({"user_id": user_id})
+

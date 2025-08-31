@@ -5,8 +5,9 @@ import os
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.objectid import ObjectId
 from datetime import datetime
+import re
 
-# --- MongoDB Connect ---
+
 try:
     # MongoDB connection string environment variable theke neya hocche.
     mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/nomadnest")
@@ -25,6 +26,9 @@ except Exception as e:
 def create_space(space_data):
     """Database e ekta notun space toiri kore."""
     space_data["created_at"] = datetime.utcnow() # Space toirir shomoy add kora hocche
+    
+    if "latitude" in space_data and "longitude" in space_data:
+        space_data["map_url"] = f"https://www.google.com/maps?q={space_data['latitude']},{space_data['longitude']}"
     return spaces_collection.insert_one(space_data)
 
 def get_all_spaces():
@@ -196,7 +200,7 @@ def add_sample_spaces():
         print("No spaces found. Adding 26 sample spaces...")
         sample_data = [
             # Dhaka (3)
-            {"host_id": "nomad#1", "host_name": "Mike Milan", "host_email": "milan@mike.com", "host_phone": "01987234561", "host_nid": "213564789986", "space_title": "Gulshan Modern Apartment", "description": "A stylish apartment in the heart of Gulshan with all modern amenities.", "location_city": "Dhaka", "latitude": 23.7925, "longitude": 90.4078, "price_per_night": 3500, "has_coworking_space": True, "space_type": "Full Apartment", "amenities": ["High-Speed WiFi", "AC", "Kitchen"], "wifi_speed_mbps": 150, "photos": _picsum("gulshan-modern"), "created_at": datetime.utcnow()},
+            {"host_id": "nomad#1", "host_name": "Mike Milan", "host_email": "milan@mike.com", "host_phone": "01987234561", "host_nid": "213564789986", "space_title": "Gulshan Modern Apartment", "description": "A stylish apartment in the heart of Gulshan with all modern amenities.", "location_city": "Dhaka", "latitude": 23.7925, "longitude": 90.4078, "price_per_night": 3500, "has_coworking_space": True, "space_type": "Full Apartment", "amenities": ["High-Speed WiFi", "AC", "Kitchen", "Pool"], "wifi_speed_mbps": 150, "photos": _picsum("gulshan-modern"), "created_at": datetime.utcnow(), "map_url": "https://www.google.com/maps?q=23.7925,90.4078"},
             {"host_id": "nomad#1", "host_name": "Mike Milan", "host_email": "milan@mike.com", "host_phone": "01987234561", "host_nid": "213564789986", "space_title": "Dhanmondi Lake View Room", "description": "Private room with a beautiful view of Dhanmondi Lake.", "location_city": "Dhaka", "latitude": 23.7465, "longitude": 90.3760, "price_per_night": 1500, "has_coworking_space": False, "space_type": "Private Room", "amenities": ["AC", "Kitchen"], "wifi_speed_mbps": 50, "photos": _picsum("dhanmondi-lake"), "created_at": datetime.utcnow()},
             {"host_id": "nomad#1", "host_name": "Mike Milan", "host_email": "milan@mike.com", "host_phone": "01987234561", "host_nid": "213564789986", "space_title": "Banani Shared Workspace", "description": "A budget-friendly shared room for students and backpackers.", "location_city": "Dhaka", "latitude": 23.7925, "longitude": 90.4078, "price_per_night": 800, "has_coworking_space": True, "space_type": "Shared Room", "amenities": ["High-Speed WiFi", "Kitchen"], "wifi_speed_mbps": 100, "photos": _picsum("banani-shared"), "created_at": datetime.utcnow()},
 
@@ -254,3 +258,50 @@ def reset_sample_spaces():
     deleted = spaces_collection.delete_many({}).deleted_count
     print(f"Deleted {deleted} existing spaces. Reinserting samples...")
     add_sample_spaces()
+
+def extract_lat_lng_from_map_url(map_url):
+    """
+    Extracts latitude and longitude from a Google Maps URL.
+    Supports formats like:
+    - https://www.google.com/maps?q=lat,lng
+    - https://www.google.com/maps/place/.../@lat,lng,...
+    - https://maps.google.com/?q=lat,lng
+    Returns (lat, lng) as floats, or (None, None) if not found.
+    """
+    # Try ?q=lat,lng
+    match = re.search(r'[?&]q=([-.\d]+),([-.\d]+)', map_url)
+    if match:
+        return float(match.group(1)), float(match.group(2))
+    # Try /@lat,lng
+    match = re.search(r'/@([-.\d]+),([-.\d]+)', map_url)
+    if match:
+        return float(match.group(1)), float(match.group(2))
+    return None, None
+
+def create_space_from_args(
+    host_id,
+    name,
+    description,
+    price_per_month,
+    amenities,
+    location_city,
+    space_type,
+    has_coworking_space,
+    photos,
+    latitude,
+    longitude
+):
+    space_data = {
+        "host_id": host_id,
+        "name": name,
+        "description": description,
+        "price_per_month": price_per_month,
+        "amenities": amenities,
+        "location_city": location_city,
+        "space_type": space_type,
+        "has_coworking_space": has_coworking_space,
+        "photos": photos,
+        "latitude": latitude,
+        "longitude": longitude
+    }
+    return create_space(space_data)
