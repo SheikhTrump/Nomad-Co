@@ -1,4 +1,4 @@
-#routes/payout.py
+# routes/payout.py
 
 from flask import Blueprint, render_template, session, redirect, url_for, flash
 from models.payout import get_payout_details

@@ -1,4 +1,4 @@
-#routes\space.py
+# routes\space.py
 
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for, flash
 from werkzeug.utils import secure_filename
@@ -30,7 +30,6 @@ upload_folder = 'static/uploads'
 os.makedirs(upload_folder, exist_ok=True)
 
 # --- Helper Functions for data normalization ---
-
 def _normalize_incoming_id(val):
     """
     Accept common incoming id shapes and return a clean hex string id when possible.
@@ -47,6 +46,28 @@ def _normalize_incoming_id(val):
         except Exception:
             return v
     return v
+
+def _sanitize_for_session(data):
+    """
+    Recursively sanitizes data to be JSON-serializable for the session.
+    """
+    if isinstance(data, list):
+        return [_sanitize_for_session(item) for item in data]
+    if isinstance(data, dict):
+        # Use .copy() to avoid modifying the original dictionary in place
+        clean_dict = {}
+        for key, value in data.items():
+            # Convert ObjectId to string for the '_id' field specifically
+            if key == '_id' and isinstance(value, ObjectId):
+                clean_dict[key] = str(value)
+            else:
+                clean_dict[key] = _sanitize_for_session(value)
+        return clean_dict
+    if isinstance(data, ObjectId):
+        return str(data)
+    if isinstance(data, datetime):
+        return data.isoformat()
+    return data
 
 def _unwrap_and_normalize_space_obj(raw):
     """
@@ -196,11 +217,14 @@ def book_space(space_id):
     }
 
     try:
+        # FIX: Added the missing line to insert the booking into the database
         db.bookings.insert_one(booking_record)
+        
         flash(f"Successfully booked {space['space_title']}!", "success")
         
         suggestions = get_popular_spaces_in_location(space['location_city'], exclude_id=space_id)
-        session['suggested_spaces'] = suggestions
+        # FIX: Sanitize suggestions before saving to session
+        session['suggested_spaces'] = _sanitize_for_session(suggestions)
         session['new_suggestions'] = True
 
         return redirect(url_for('traveler_profiles.booking_history'))
@@ -307,3 +331,4 @@ def delete_space_route(space_id):
 
     flash("Space deleted successfully!", "success")
     return redirect(url_for('space_bp.get_my_spaces_route'))
+

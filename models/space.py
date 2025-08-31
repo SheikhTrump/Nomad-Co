@@ -1,4 +1,4 @@
-#models\space.py
+# models\space.py
 # Ei file ta space (jemn: apartment, room) toiri, update, delete, ebong khujar kaaj kore.
 
 import os
@@ -6,6 +6,9 @@ from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.objectid import ObjectId
 from datetime import datetime
 import re
+# We need to create sample hosts, so we need access to the users collection and password hashing
+from .user import db, users_collection
+from werkzeug.security import generate_password_hash
 
 
 try:
@@ -22,176 +25,55 @@ try:
 except Exception as e:
     print(f"Space Model: Error connecting to MongoDB: {e}")
 
-# --- CRUD (Create, Read, Update, Delete) helpers ---
-def create_space(space_data):
-    """Database e ekta notun space toiri kore."""
-    space_data["created_at"] = datetime.utcnow() # Space toirir shomoy add kora hocche
-    
-    if "latitude" in space_data and "longitude" in space_data:
-        space_data["map_url"] = f"https://www.google.com/maps?q={space_data['latitude']},{space_data['longitude']}"
-    return spaces_collection.insert_one(space_data)
-
-def get_all_spaces():
-    """Database theke shob space er list return kore."""
-    return list(spaces_collection.find())
-
-def get_space_by_id(space_id):
-    """
-    Ekta nirdishto space ke tar ID diye khuje ber kore.
-    ID ta string ba ObjectId, jekono format e thakte pare.
-    """
-    try:
-        # Jodi string hoy, take ObjectId te convert kora hocche.
-        _id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
-        return spaces_collection.find_one({"_id": _id})
-    except Exception: # Jodi invalid ID format hoy, None return korbe.
-        return None
-
-
-def update_space(space_id, updated_data):
-    """Ekta nirdishto space er data update kore."""
-    return spaces_collection.update_one(
-        {"_id": ObjectId(space_id)},
-        {"$set": updated_data} # $set diye shudhu nirdishto field update hoy
-    )
-
-def delete_space(space_id):
-    """Ekta nirdishto space ke database theke delete kore."""
-    return spaces_collection.delete_one({"_id": ObjectId(space_id)})
-
-
-def get_spaces_by_host(host_id):
-    """Ekjon nirdishto host er toiri kora shob space fetch kore."""
-    return list(spaces_collection.find({"host_id": host_id}))
-
-def get_popular_spaces_in_location(location_city, exclude_id=None, limit=4):
-    """
-    Eki shohore onnano popular space gulo khuje ber kore.
-    ObjectId ke string e convert kora hoy jate JSON e easily use kora jay.
-    """
-    query = {
-        "location_city": location_city,
-        # Nirdishto ID ta bad deyar jonno $ne (not equal) operator use kora hoyeche.
-        "_id": {"$ne": ObjectId(exclude_id)} if exclude_id else {"$exists": True}
-    }
-    spaces = list(spaces_collection.find(query).limit(limit))
-    # Prottekta space er _id (ObjectId) ke string e convert kora hocche.
-    for space in spaces:
-        space['_id'] = str(space['_id'])
-    return spaces
-
-
-# --- Filter & sort ---
-def filter_spaces(filters, user_profile=None):
-    """Bivinno filter (price, location, etc.) er upor vitti kore space khuje ber kore."""
-    query = {}
-
-    # Host ID onujayi filter
-    if filters.get('host_id'):
-        query['host_id'] = filters['host_id']
-
-    # Price range onujayi filter
-    price_query = {}
-    try:
-        if filters.get("min_price") is not None and filters.get("min_price") != '':
-            price_query["$gte"] = int(filters.get("min_price")) # gte = greater than or equal
-        if filters.get("max_price") is not None and filters.get("max_price") != '':
-            price_query["$lte"] = int(filters.get("max_price")) # lte = less than or equal
-        if price_query:
-            query["price_per_night"] = price_query
-    except (ValueError, TypeError):
-        pass # Jodi price valid number na hoy, ignore korbe
-
-    # Location onujayi filter (case-insensitive)
-    if filters.get("location"):
-        query["location_city"] = {"$regex": filters["location"], "$options": "i"}
-
-    # Co-working space ache kina, sheta diye filter
-    if filters.get("coworking"):
-        query["has_coworking_space"] = True
-
-    # Space er dhoron (Full Apartment, Private Room) onujayi filter
-    if filters.get("space_type"):
-        query["space_type"] = filters["space_type"]
-
-    # Amenities (WiFi, AC) onujayi filter
-    if filters.get("amenities"):
-        query["amenities"] = {"$all": filters.get("amenities")} # Shob amenity thakte hobe
-
-    # Jodi user "best match" onujayi sort korte chay
-    if filters.get("sort_by") == "best_match" and user_profile:
-        # User er budget and wifi speed er preference neya hocche.
-        user_budget = user_profile.get("max_budget") or 999999
-        min_wifi = user_profile.get("min_wifi_speed") or 0
-
-        # Aggregation pipeline diye prottekta space er jonno ekta "match_score" hishab kora hocche.
-        pipeline = [
-            {'$match': query},
-            {
-                '$addFields': {
-                    'match_score': {
-                        '$add': [
-                            # Jodi space user er budget er moddhe thake, 100 point.
-                            {'$cond': [{'$lte': ['$price_per_night', user_budget]}, 100, 0]},
-                            # Jodi wifi speed user er minimum requirement meet kore, 50 point.
-                            {'$cond': [{'$gte': ['$wifi_speed_mbps', min_wifi]}, 50, 0]}
-                        ]
-                    }
-                }
-            },
-            # Score onujayi boro theke choto, and tarpor price onujayi choto theke boro shajano.
-            {'$sort': {'match_score': DESCENDING, 'price_per_night': ASCENDING}}
-        ]
-        return list(spaces_collection.aggregate(pipeline))
-
-    # Onnano sorting option er jonno
-    sort_order = []
-    if filters.get("sort_by") == "price_asc": # Price kom theke beshi
-        sort_order.append(("price_per_night", ASCENDING))
-    elif filters.get("sort_by") == "price_desc": # Price beshi theke kom
-        sort_order.append(("price_per_night", DESCENDING))
-    
-    if sort_order:
-        return list(spaces_collection.find(query).sort(sort_order))
-    else:
-        return list(spaces_collection.find(query))
-
-
-# --- Booking Management ---
-def add_booking_to_space(space_id, booking):
-    """Space er document er moddhe notun booking add kore."""
-    try:
-        _id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
-    except Exception:
-        _id = space_id
-    # $push diye 'bookings' array te notun booking add kora hocche.
-    res = spaces_collection.update_one({'_id': _id}, {'$push': {'bookings': booking}})
-    return res.modified_count > 0
-
-def cancel_booking_in_space(booking_id, user_id):
-    """Space er document theke ekta booking remove kore."""
-    if not booking_id:
-        return False
-    try:
-        # $pull diye 'bookings' array theke nirdishto booking ta remove kora hocche.
-        res = spaces_collection.update_one(
-            {'bookings.booking_id': booking_id, 'bookings.user_id': user_id},
-            {'$pull': {'bookings': {'booking_id': booking_id, 'user_id': user_id}}}
-        )
-        return res.modified_count > 0
-    except Exception:
-        return False
-
 
 # --- Sample data utilities (Shudhu testing er jonno) ---
 
 def _picsum(seed: str, w: int = 800, h: int = 600):
     """Sample chobi generate korar jonno helper function."""
+    # Using a different placeholder service as picsum can be unreliable with seeds
     return [
-        f"https://picsum.photos/seed/{seed}-1/{w}/{h}",
-        f"https://picsum.photos/seed/{seed}-2/{w}/{h}",
-        f"https://picsum.photos/seed/{seed}-3/{w}/{h}",
+        f"https://placehold.co/{w}x{h}/1f2937/46e0c1?text={seed.replace('-', '%20')}-1",
+        f"https://placehold.co/{w}x{h}/1f2937/46e0c1?text={seed.replace('-', '%20')}-2",
+        f"https://placehold.co/{w}x{h}/1f2937/46e0c1?text={seed.replace('-', '%20')}-3",
     ]
+
+def get_or_create_all_sample_hosts(sample_data):
+    """
+    Ensures all hosts from the sample data exist in the database and
+    returns a mapping from their user_id (e.g., "nomad#1") to their real MongoDB _id.
+    """
+    host_map = {}
+    
+    # Extract unique hosts from the sample data
+    unique_hosts = {d["host_id"]: d for d in sample_data}.values()
+
+    for host_details in unique_hosts:
+        user_id = host_details["host_id"]
+        email = host_details["host_email"]
+        
+        host = users_collection.find_one({"user_id": user_id})
+        if host:
+            host_map[user_id] = str(host["_id"])
+        else:
+            # If not, create the host
+            new_host = {
+                "user_id": user_id,
+                "first_name": host_details["host_name"].split(" ")[0],
+                "last_name": " ".join(host_details["host_name"].split(" ")[1:]),
+                "email": email,
+                "nid": host_details["host_nid"],
+                "phone": host_details["host_phone"],
+                "password": generate_password_hash("password123"),
+                "role": "host",
+                "verification": {"status": "approved"},
+                "is_verified": True,
+                "created_at": datetime.utcnow(),
+            }
+            result = users_collection.insert_one(new_host)
+            host_map[user_id] = str(result.inserted_id)
+            print(f"Created sample host: {host_details['host_name']}")
+    
+    return host_map
 
 
 def add_sample_spaces():
@@ -206,7 +88,6 @@ def add_sample_spaces():
 
             # Chittagong (3)
             {"host_id": "nomad#1", "host_name": "Mike Milan", "host_email": "milan@mike.com", "host_phone": "01987234561", "host_nid": "213564789986", "space_title": "Agrabad Business Suite", "description": "Private room perfect for business travelers.", "location_city": "Chittagong", "latitude": 22.3333, "longitude": 91.8333, "price_per_night": 2000, "has_coworking_space": True, "space_type": "Private Room", "amenities": ["High-Speed WiFi", "AC"], "wifi_speed_mbps": 80, "photos": _picsum("agrabad-suite"), "created_at": datetime.utcnow()},
-            {"host_id": "nomad#1", "host_name": "Mike Milan", "host_email": "milan@mike.com", "host_phone": "01987234561", "host_nid": "213564789986", "space_title": "Foy's Lake Cottage", "description": "A beautiful cottage near Foy's Lake.", "location_city": "Chittagong", "latitude": 22.3667, "longitude": 91.8000, "price_per_night": 2500, "has_coworking_space": False, "space_type": "Full Apartment", "amenities": ["Kitchen", "Parking"], "wifi_speed_mbps": 40, "photos": _picsum("foys-lake-cottage"), "created_at": datetime.utcnow()},
             {"host_id": "ctg03", "host_name": "Rina Das", "host_email": "rina@email.com", "host_phone": "01711112222", "host_nid": "1993030303030", "space_title": "GEC Circle Cozy Room", "description": "A small and cozy room in the GEC Circle area.", "location_city": "Chittagong", "latitude": 22.3592, "longitude": 91.8217, "price_per_night": 1100, "has_coworking_space": False, "space_type": "Private Room", "amenities": ["AC"], "wifi_speed_mbps": 45, "photos": _picsum("gec-circle"), "created_at": datetime.utcnow()},
 
             # Cox's Bazar (2)
@@ -249,12 +130,137 @@ def add_sample_spaces():
             {"host_id": "ban01", "host_name": "David Tripura", "host_email": "david.t@email.com", "host_phone": "01515151515", "host_nid": "1999030303030", "space_title": "Bandarban Hillside Cabin", "description": "A rustic shared cabin with breathtaking views.", "location_city": "Bandarban", "latitude": 22.1994, "longitude": 92.2185, "price_per_night": 1500, "has_coworking_space": False, "space_type": "Shared Room", "amenities": ["Kitchen"], "wifi_speed_mbps": 15, "photos": _picsum("bandarban-cabin"), "created_at": datetime.utcnow()},
             {"host_id": "ban02", "host_name": "Maria Marma", "host_email": "maria@email.com", "host_phone": "01812345678", "host_nid": "1998080808080", "space_title": "Nilgiri Mountain View", "description": "A room with a stunning view of the Nilgiri mountains.", "location_city": "Bandarban", "latitude": 21.9558, "longitude": 92.3236, "price_per_night": 2500, "has_coworking_space": False, "space_type": "Private Room", "amenities": ["Parking"], "wifi_speed_mbps": 10, "photos": _picsum("nilgiri-view"), "created_at": datetime.utcnow()},
         ]
+        
+        # Get a map of user_id -> real _id
+        host_id_map = get_or_create_all_sample_hosts(sample_data)
+        
+        # Replace placeholder host_id with real _id
+        for space in sample_data:
+            placeholder_id = space["host_id"]
+            if placeholder_id in host_id_map:
+                space["host_id"] = host_id_map[placeholder_id]
+            # Remove extra host details not part of the space schema
+            for key in ["host_name", "host_email", "host_phone", "host_nid"]:
+                if key in space:
+                    del space[key]
+
         spaces_collection.insert_many(sample_data)
         print(f"{len(sample_data)} sample spaces added.")
 
 
-def reset_sample_spaces():
-    """Bipodjonok: shob space delete kore, ebong sample data diye abar populate kore."""
+def create_space(space_data):
+    """Database e ekta notun space toiri kore ebong save kore."""
+    space_data["created_at"] = datetime.utcnow()
+    return spaces_collection.insert_one(space_data)
+
+def get_space_by_id(space_id):
+    """Ekta nirdishto space ke tar unique ID diye database theke fetch kore."""
+    try:
+        return spaces_collection.find_one({"_id": ObjectId(space_id)})
+    except Exception:
+        return None
+
+def update_space(space_id, data):
+    """Ekta space er information update kore."""
+    return spaces_collection.update_one(
+        {"_id": ObjectId(space_id)},
+        {"$set": data}
+    )
+
+def delete_space(space_id):
+    """Ekta space ke database theke delete kore."""
+    return spaces_collection.delete_one({"_id": ObjectId(space_id)})
+
+def get_all_spaces():
+    """Database theke shob space fetch kore."""
+    return list(spaces_collection.find().sort("created_at", DESCENDING))
+
+def get_spaces_by_host(host_id):
+    """Ekjon nirdishto host er toiri kora shob space fetch kore."""
+    return list(spaces_collection.find({"host_id": host_id}).sort("created_at", DESCENDING))
+
+
+def filter_spaces(filters, user_profile=None):
+    """Bivinno criteria'r upor base kore space filter kore."""
+    query = {}
+    
+    # Text search for location
+    if filters.get('location'):
+        query['location_city'] = re.compile(filters['location'], re.IGNORECASE)
+        
+    # Price range filter
+    min_price = filters.get('min_price')
+    max_price = filters.get('max_price')
+    if min_price or max_price:
+        price_query = {}
+        if min_price:
+            try:
+                price_query['$gte'] = int(min_price)
+            except (ValueError, TypeError):
+                pass
+        if max_price:
+            try:
+                price_query['$lte'] = int(max_price)
+            except (ValueError, TypeError):
+                pass
+        if price_query:
+            query['price_per_night'] = price_query
+    
+    # Co-working space filter
+    if filters.get('coworking'):
+        query['has_coworking_space'] = True
+        
+    # Space type filter
+    if filters.get('space_type'):
+        query['space_type'] = filters['space_type']
+        
+    # Amenities filter (match all selected amenities)
+    if filters.get('amenities'):
+        query['amenities'] = {'$all': filters['amenities']}
+    
+    # Filter by a specific host
+    if filters.get('host_id'):
+        query['host_id'] = filters['host_id']
+
+    # Find matching spaces
+    spaces = list(spaces_collection.find(query))
+
+    # Sort results
+    sort_by = filters.get('sort_by')
+    if sort_by == 'price_asc':
+        spaces.sort(key=lambda x: x['price_per_night'])
+    elif sort_by == 'price_desc':
+        spaces.sort(key=lambda x: x['price_per_night'], reverse=True)
+    elif sort_by == 'best_match' and user_profile:
+        # 'Best Match' sorting logic
+        def calculate_score(space):
+            score = 0
+            # Budget match
+            if space['price_per_night'] <= user_profile.get('max_budget', 99999):
+                score += 20
+            # Wifi speed match
+            if space.get('wifi_speed_mbps', 0) >= user_profile.get('min_wifi_speed', 0):
+                score += 15
+            # Location preference could be added here if we stored it
+            return score
+        
+        spaces.sort(key=calculate_score, reverse=True)
+        
+    return spaces
+
+def get_popular_spaces_in_location(location, limit=4, exclude_id=None):
+    """
+    Finds other popular spaces in the same location, excluding the current one.
+    """
+    query = {"location_city": location}
+    if exclude_id:
+        query["_id"] = {"$ne": ObjectId(exclude_id)}
+    # Popularity can be defined by reviews, bookings, etc.
+    # For now, we'll just get other spaces from the same location.
+    return list(spaces_collection.find(query).limit(limit))
+
+def reset_sample_data():
+    """Deletes and re-inserts sample data for testing."""
     deleted = spaces_collection.delete_many({}).deleted_count
     print(f"Deleted {deleted} existing spaces. Reinserting samples...")
     add_sample_spaces()
@@ -262,40 +268,23 @@ def reset_sample_spaces():
 def extract_lat_lng_from_map_url(map_url):
     """
     Extracts latitude and longitude from a Google Maps URL.
-    Supports formats like:
-    - https://www.google.com/maps?q=lat,lng
-    - https://www.google.com/maps/place/.../@lat,lng,...
-    - https://maps.google.com/?q=lat,lng
-    Returns (lat, lng) as floats, or (None, None) if not found.
     """
-    # Try ?q=lat,lng
-    match = re.search(r'[?&]q=([-.\d]+),([-.\d]+)', map_url)
-    if match:
-        return float(match.group(1)), float(match.group(2))
-    # Try /@lat,lng
-    match = re.search(r'/@([-.\d]+),([-.\d]+)', map_url)
+    match = re.search(r'/@([-.\\d]+),([-.\\d]+)', map_url)
     if match:
         return float(match.group(1)), float(match.group(2))
     return None, None
 
 def create_space_from_args(
-    host_id,
-    name,
-    description,
-    price_per_month,
-    amenities,
-    location_city,
-    space_type,
-    has_coworking_space,
-    photos,
-    latitude,
-    longitude
+    host_id, name, description, price_per_month, amenities,
+    location_city, space_type, has_coworking_space, photos,
+    latitude, longitude
 ):
+    """Creates a space from individual arguments."""
     space_data = {
         "host_id": host_id,
-        "name": name,
+        "space_title": name,
         "description": description,
-        "price_per_month": price_per_month,
+        "price_per_night": price_per_month,
         "amenities": amenities,
         "location_city": location_city,
         "space_type": space_type,
@@ -305,3 +294,4 @@ def create_space_from_args(
         "longitude": longitude
     }
     return create_space(space_data)
+

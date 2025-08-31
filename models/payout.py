@@ -1,4 +1,4 @@
-#models/payout.py
+# models/payout.py
 
 from .user import db
 from datetime import datetime

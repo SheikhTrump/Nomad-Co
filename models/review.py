@@ -1,4 +1,4 @@
-#models/review.py
+# models/review.py
 # Ei file ta user review shomporkito shob database kaaj handle kore.
 
 import os
@@ -20,12 +20,12 @@ except Exception as e:
     print(f"Review Model: Error connecting to MongoDB: {e}")
 
 
-def create_review(space_id, user_id, user_name, rating, comment, photo_url=None):
+def create_review(space_id, user_obj_id, user_name, rating, comment, photo_url=None):
     """Database e ekta notun review toiri kore ebong save kore."""
     # Review er jonno ekta document (dictionary) toiri kora hocche.
     review_document = {
         "space_id": ObjectId(space_id), # space_id ke ObjectId te convert kora hocche
-        "user_id": user_id,
+        "user_id": ObjectId(user_obj_id), # CORRECTED: Store the user's ObjectId
         "user_name": user_name,
         "rating": int(rating), # rating string theke integer e convert kora hocche
         "comment": comment,
@@ -42,12 +42,12 @@ def get_reviews_for_space(space_id):
     return list(reviews_collection.find({"space_id": ObjectId(space_id)}).sort("created_at", -1))
 
 # --- NEW: Ekjon nirdishto user er shob review paowar jonno function ---
-def get_reviews_by_user(user_id):
+def get_reviews_by_user(user_obj_id):
     """
     Ekjon nirdishto user er deya shob review database theke fetch kore.
     """
-    # user_id diye shob matching review khuje ber kora hocche.
-    user_reviews = list(reviews_collection.find({"user_id": user_id}).sort("created_at", -1))
+    # CORRECTED: Query by 'user_id' which now stores the ObjectId
+    user_reviews = list(reviews_collection.find({"user_id": ObjectId(user_obj_id)}).sort("created_at", -1))
     
     # Prottekta review er jonno, oi review ta kon space er, shetar details fetch kora hocche.
     for review in user_reviews:

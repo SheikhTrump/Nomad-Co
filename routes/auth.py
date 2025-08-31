@@ -1,4 +1,4 @@
-#routes/auth.py
+# routes/auth.py
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, make_response
 from werkzeug.security import check_password_hash
@@ -41,15 +41,9 @@ def signup():
 
         try:
             new_user_id = create_user(form_data)
-            # The session user_id should be the mongo _id for lookups, but the custom id is shown to the user
-            user = find_user_by_login(new_user_id) # Find the user to get their _id
-            if user:
-                 session['user_id'] = str(user.get('_id'))
-            else:
-                # Fallback in case user is not found immediately after creation
-                session['user_id'] = new_user_id
-
-            flash(f'Account created successfully! Your User ID is {new_user_id}', 'success')
+            # CORRECTED: Do not log the user in automatically after signup.
+            # Instead, flash a success message and redirect them to the login page.
+            flash(f'Account created successfully! Your User ID is {new_user_id}. Please log in.', 'success')
             return redirect(url_for('auth.login'))
         except Exception as e:
             flash(f'An error occurred: {e}', 'danger')
@@ -81,7 +75,8 @@ def login():
         user = find_user_by_login(login_identifier)
         if user and check_password_hash(user['password'], password):
             session['role'] = user['role']
-            session['user_id'] = str(user['_id'])
+            session['user_id'] = str(user['_id']) # Keep this for database queries
+            session['nomad_id'] = user['user_id'] # Add this for display purposes
             session['first_name'] = user['first_name']
             
             # Update last_login timestamp on successful login
@@ -135,3 +130,5 @@ def logout():
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
+
+

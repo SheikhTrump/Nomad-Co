@@ -1,9 +1,15 @@
-venv/ 
+Python virtual environment
+venv/
+.venv/
+
+VSCode editor folder
 .vscode/
-__pycache__/
-*.pyc   
+
+Python cache files
+pycache/
+*.pyc
 *.pyo
 *.pyd
+
+Environment variables file (contains secrets)
 .env
-.venv/
-static/
