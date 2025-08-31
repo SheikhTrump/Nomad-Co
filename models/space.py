@@ -1,3 +1,6 @@
+#models\space.py
+# Ei file ta space (jemn: apartment, room) toiri, update, delete, ebong khujar kaaj kore.
+
 import os
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.objectid import ObjectId
@@ -6,11 +9,12 @@ import re
 
 
 try:
+    # MongoDB connection string environment variable theke neya hocche.
     mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/nomadnest")
-    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000) # 5 second e connect na hoile error dibe
     db = client.get_database("nomadnest")
     spaces_collection = db.spaces
-    
+    # Index toiri kora hocche jate query/filter kora druto hoy.
     spaces_collection.create_index([("price_per_night", ASCENDING)])
     spaces_collection.create_index([("location_city", ASCENDING)])
     spaces_collection.create_index([("has_coworking_space", ASCENDING)])
@@ -18,54 +22,60 @@ try:
 except Exception as e:
     print(f"Space Model: Error connecting to MongoDB: {e}")
 
-
+# --- CRUD (Create, Read, Update, Delete) helpers ---
 def create_space(space_data):
-    space_data["created_at"] = datetime.utcnow()
+    """Database e ekta notun space toiri kore."""
+    space_data["created_at"] = datetime.utcnow() # Space toirir shomoy add kora hocche
     
     if "latitude" in space_data and "longitude" in space_data:
         space_data["map_url"] = f"https://www.google.com/maps?q={space_data['latitude']},{space_data['longitude']}"
     return spaces_collection.insert_one(space_data)
 
 def get_all_spaces():
+    """Database theke shob space er list return kore."""
     return list(spaces_collection.find())
 
 def get_space_by_id(space_id):
     """
-    Accepts either a hex string id or an ObjectId and returns the space document (or None).
+    Ekta nirdishto space ke tar ID diye khuje ber kore.
+    ID ta string ba ObjectId, jekono format e thakte pare.
     """
     try:
+        # Jodi string hoy, take ObjectId te convert kora hocche.
         _id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
         return spaces_collection.find_one({"_id": _id})
-    except Exception:
+    except Exception: # Jodi invalid ID format hoy, None return korbe.
         return None
 
 
 def update_space(space_id, updated_data):
+    """Ekta nirdishto space er data update kore."""
     return spaces_collection.update_one(
         {"_id": ObjectId(space_id)},
-        {"$set": updated_data}
+        {"$set": updated_data} # $set diye shudhu nirdishto field update hoy
     )
 
 def delete_space(space_id):
+    """Ekta nirdishto space ke database theke delete kore."""
     return spaces_collection.delete_one({"_id": ObjectId(space_id)})
 
 
 def get_spaces_by_host(host_id):
-    """Fetches all spaces created by a specific host."""
+    """Ekjon nirdishto host er toiri kora shob space fetch kore."""
     return list(spaces_collection.find({"host_id": host_id}))
 
 def get_popular_spaces_in_location(location_city, exclude_id=None, limit=4):
     """
-    Finds other spaces in the same city, excluding the specified ID.
-    Converts ObjectId to string to make the result JSON serializable for sessions.
-
-    
+    Eki shohore onnano popular space gulo khuje ber kore.
+    ObjectId ke string e convert kora hoy jate JSON e easily use kora jay.
     """
     query = {
         "location_city": location_city,
+        # Nirdishto ID ta bad deyar jonno $ne (not equal) operator use kora hoyeche.
         "_id": {"$ne": ObjectId(exclude_id)} if exclude_id else {"$exists": True}
     }
     spaces = list(spaces_collection.find(query).limit(limit))
+    # Prottekta space er _id (ObjectId) ke string e convert kora hocche.
     for space in spaces:
         space['_id'] = str(space['_id'])
     return spaces
@@ -73,74 +83,97 @@ def get_popular_spaces_in_location(location_city, exclude_id=None, limit=4):
 
 # --- Filter & sort ---
 def filter_spaces(filters, user_profile=None):
+    """Bivinno filter (price, location, etc.) er upor vitti kore space khuje ber kore."""
     query = {}
 
+    # Host ID onujayi filter
     if filters.get('host_id'):
         query['host_id'] = filters['host_id']
 
+    # Price range onujayi filter
     price_query = {}
     try:
         if filters.get("min_price") is not None and filters.get("min_price") != '':
-            price_query["$gte"] = int(filters.get("min_price"))
+            price_query["$gte"] = int(filters.get("min_price")) # gte = greater than or equal
         if filters.get("max_price") is not None and filters.get("max_price") != '':
-            price_query["$lte"] = int(filters.get("max_price"))
+            price_query["$lte"] = int(filters.get("max_price")) # lte = less than or equal
         if price_query:
             query["price_per_night"] = price_query
     except (ValueError, TypeError):
-        pass
+        pass # Jodi price valid number na hoy, ignore korbe
 
+    # Location onujayi filter (case-insensitive)
     if filters.get("location"):
         query["location_city"] = {"$regex": filters["location"], "$options": "i"}
 
+    # Co-working space ache kina, sheta diye filter
     if filters.get("coworking"):
         query["has_coworking_space"] = True
 
+    # Space er dhoron (Full Apartment, Private Room) onujayi filter
     if filters.get("space_type"):
         query["space_type"] = filters["space_type"]
 
+    # Amenities (WiFi, AC) onujayi filter
     if filters.get("amenities"):
-        query["amenities"] = {"$all": filters.get("amenities")}
+        query["amenities"] = {"$all": filters.get("amenities")} # Shob amenity thakte hobe
 
-    matching = list(spaces_collection.find(query))
-
+    # Jodi user "best match" onujayi sort korte chay
     if filters.get("sort_by") == "best_match" and user_profile:
-        scored = []
-        user_budget_monthly = user_profile.get("max_budget", 0) or 0
-        user_budget_nightly = user_budget_monthly / 30 if user_budget_monthly else 0
-        min_wifi = user_profile.get("min_wifi_speed", 0) or 0
-        for sp in matching:
-            score = 0.0
-            price = sp.get("price_per_night", 0) or 0
-            wifi = sp.get("wifi_speed_mbps", 0) or 0
-            diff = user_budget_nightly - price
-            if diff >= 0:
-                score += diff * 0.1
-            if wifi >= min_wifi:
-                score += (wifi - min_wifi)
-            scored.append({"space": sp, "score": score})
-        return [x["space"] for x in sorted(scored, key=lambda x: x["score"], reverse=True)]
+        # User er budget and wifi speed er preference neya hocche.
+        user_budget = user_profile.get("max_budget") or 999999
+        min_wifi = user_profile.get("min_wifi_speed") or 0
 
+        # Aggregation pipeline diye prottekta space er jonno ekta "match_score" hishab kora hocche.
+        pipeline = [
+            {'$match': query},
+            {
+                '$addFields': {
+                    'match_score': {
+                        '$add': [
+                            # Jodi space user er budget er moddhe thake, 100 point.
+                            {'$cond': [{'$lte': ['$price_per_night', user_budget]}, 100, 0]},
+                            # Jodi wifi speed user er minimum requirement meet kore, 50 point.
+                            {'$cond': [{'$gte': ['$wifi_speed_mbps', min_wifi]}, 50, 0]}
+                        ]
+                    }
+                }
+            },
+            # Score onujayi boro theke choto, and tarpor price onujayi choto theke boro shajano.
+            {'$sort': {'match_score': DESCENDING, 'price_per_night': ASCENDING}}
+        ]
+        return list(spaces_collection.aggregate(pipeline))
+
+    # Onnano sorting option er jonno
     sort_order = []
-    if filters.get("sort_by") == "price_asc":
+    if filters.get("sort_by") == "price_asc": # Price kom theke beshi
         sort_order.append(("price_per_night", ASCENDING))
-    elif filters.get("sort_by") == "price_desc":
+    elif filters.get("sort_by") == "price_desc": # Price beshi theke kom
         sort_order.append(("price_per_night", DESCENDING))
+    
+    if sort_order:
+        return list(spaces_collection.find(query).sort(sort_order))
+    else:
+        return list(spaces_collection.find(query))
 
-    return list(spaces_collection.find(query).sort(sort_order)) if sort_order else matching
 
 # --- Booking Management ---
 def add_booking_to_space(space_id, booking):
+    """Space er document er moddhe notun booking add kore."""
     try:
         _id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
     except Exception:
         _id = space_id
+    # $push diye 'bookings' array te notun booking add kora hocche.
     res = spaces_collection.update_one({'_id': _id}, {'$push': {'bookings': booking}})
     return res.modified_count > 0
 
 def cancel_booking_in_space(booking_id, user_id):
+    """Space er document theke ekta booking remove kore."""
     if not booking_id:
         return False
     try:
+        # $pull diye 'bookings' array theke nirdishto booking ta remove kora hocche.
         res = spaces_collection.update_one(
             {'bookings.booking_id': booking_id, 'bookings.user_id': user_id},
             {'$pull': {'bookings': {'booking_id': booking_id, 'user_id': user_id}}}
@@ -150,9 +183,10 @@ def cancel_booking_in_space(booking_id, user_id):
         return False
 
 
-# --- Sample data utilities ---
+# --- Sample data utilities (Shudhu testing er jonno) ---
 
 def _picsum(seed: str, w: int = 800, h: int = 600):
+    """Sample chobi generate korar jonno helper function."""
     return [
         f"https://picsum.photos/seed/{seed}-1/{w}/{h}",
         f"https://picsum.photos/seed/{seed}-2/{w}/{h}",
@@ -161,6 +195,7 @@ def _picsum(seed: str, w: int = 800, h: int = 600):
 
 
 def add_sample_spaces():
+    """Jodi database e kono space na thake, tahole kichu sample data add kore."""
     if spaces_collection.count_documents({}) == 0:
         print("No spaces found. Adding 26 sample spaces...")
         sample_data = [
@@ -219,7 +254,7 @@ def add_sample_spaces():
 
 
 def reset_sample_spaces():
-    """Danger: deletes all spaces, then repopulates with sample data."""
+    """Bipodjonok: shob space delete kore, ebong sample data diye abar populate kore."""
     deleted = spaces_collection.delete_many({}).deleted_count
     print(f"Deleted {deleted} existing spaces. Reinserting samples...")
     add_sample_spaces()
@@ -270,5 +305,3 @@ def create_space_from_args(
         "longitude": longitude
     }
     return create_space(space_data)
-
-
