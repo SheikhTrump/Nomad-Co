@@ -1,6 +1,3 @@
-# routes\traveler_profiles.py
-# Ei file ta traveler er profile page shomporkito shob route (URL) handle kore.
-
 import os
 import re
 from flask import Blueprint, current_app, request, redirect, url_for, flash, session, render_template, jsonify
@@ -30,10 +27,9 @@ def allowed_file(filename):
     """File extension check korar jonno helper function."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @traveler_profiles_bp.route("/profile/traveler")
 def view_traveler_profile():
-    """Traveler er main profile page ta dekhay."""
-    # Check kore je user traveler hishebe login kora ache kina.
     if 'user_id' not in session or session.get('role') != 'traveler':
         flash('You must be logged in as a traveler to view this page.', 'danger')
         return redirect(url_for('auth.login'))
@@ -49,6 +45,7 @@ def view_traveler_profile():
     if not profile_data:
         flash('Could not find your profile data.', 'danger')
         return redirect(url_for('auth.logout'))
+    
 
     # FIX: Use the correct user_mongo_id for all data fetching
     favorite_spaces = get_user_favorite_spaces(user_mongo_id)
@@ -211,4 +208,3 @@ def cancel_booking_profile(booking_id):
 
     flash(msg, 'success' if success else 'warning')
     return redirect(url_for('traveler_profiles.booking_history'))
-

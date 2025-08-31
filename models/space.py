@@ -12,12 +12,11 @@ from werkzeug.security import generate_password_hash
 
 
 try:
-    # MongoDB connection string environment variable theke neya hocche.
     mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/nomadnest")
-    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000) # 5 second e connect na hoile error dibe
+    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
     db = client.get_database("nomadnest")
     spaces_collection = db.spaces
-    # Index toiri kora hocche jate query/filter kora druto hoy.
+    
     spaces_collection.create_index([("price_per_night", ASCENDING)])
     spaces_collection.create_index([("location_city", ASCENDING)])
     spaces_collection.create_index([("has_coworking_space", ASCENDING)])
@@ -26,7 +25,121 @@ except Exception as e:
     print(f"Space Model: Error connecting to MongoDB: {e}")
 
 
-# --- Sample data utilities (Shudhu testing er jonno) ---
+# --- Core CRUD & Filter Functions ---
+
+def create_space(space_data):
+    """Database e ekta notun space toiri kore ebong save kore."""
+    space_data["created_at"] = datetime.utcnow()
+    return spaces_collection.insert_one(space_data)
+
+def get_space_by_id(space_id):
+    """Ekta nirdishto space ke tar unique ID diye database theke fetch kore."""
+    try:
+        return spaces_collection.find_one({"_id": ObjectId(space_id)})
+    except Exception:
+        return None
+
+def update_space(space_id, data):
+    """Ekta space er information update kore."""
+    return spaces_collection.update_one(
+        {"_id": ObjectId(space_id)},
+        {"$set": data}
+    )
+
+def delete_space(space_id):
+    """Ekta space ke database theke delete kore."""
+    return spaces_collection.delete_one({"_id": ObjectId(space_id)})
+
+def get_all_spaces():
+    """Database theke shob space fetch kore."""
+    return list(spaces_collection.find().sort("created_at", DESCENDING))
+
+def get_spaces_by_host(host_id):
+    """Ekjon nirdishto host er toiri kora shob space fetch kore."""
+    return list(spaces_collection.find({"host_id": host_id}).sort("created_at", DESCENDING))
+
+
+def filter_spaces(filters, user_profile=None):
+    """Bivinno criteria'r upor base kore space filter kore."""
+    query = {}
+    
+    # Text search for location
+    if filters.get('location'):
+        query['location_city'] = re.compile(filters['location'], re.IGNORECASE)
+        
+    # Price range filter
+    min_price = filters.get('min_price')
+    max_price = filters.get('max_price')
+    if min_price or max_price:
+        price_query = {}
+        if min_price:
+            try:
+                price_query['$gte'] = int(min_price)
+            except (ValueError, TypeError):
+                pass
+        if max_price:
+            try:
+                price_query['$lte'] = int(max_price)
+            except (ValueError, TypeError):
+                pass
+        if price_query:
+            query['price_per_night'] = price_query
+    
+    # Co-working space filter
+    if filters.get('coworking'):
+        query['has_coworking_space'] = True
+        
+    # Space type filter
+    if filters.get('space_type'):
+        query['space_type'] = filters['space_type']
+        
+    # Amenities filter (match all selected amenities)
+    if filters.get('amenities'):
+        query['amenities'] = {'$all': filters['amenities']}
+    
+    # Filter by a specific host
+    if filters.get('host_id'):
+        query['host_id'] = filters['host_id']
+
+    # Find matching spaces
+    spaces = list(spaces_collection.find(query))
+
+    # Sort results
+    sort_by = filters.get('sort_by')
+    if sort_by == 'price_asc':
+        spaces.sort(key=lambda x: x['price_per_night'])
+    elif sort_by == 'price_desc':
+        spaces.sort(key=lambda x: x['price_per_night'], reverse=True)
+    elif sort_by == 'best_match' and user_profile:
+        # 'Best Match' sorting logic
+        def calculate_score(space):
+            score = 0
+            # Budget match
+            if space['price_per_night'] <= user_profile.get('max_budget', 99999):
+                score += 20
+            # Wifi speed match
+            if space.get('wifi_speed_mbps', 0) >= user_profile.get('min_wifi_speed', 0):
+                score += 15
+            # Location preference could be added here if we stored it
+            return score
+        
+        spaces.sort(key=calculate_score, reverse=True)
+        
+    return spaces
+
+def get_popular_spaces_in_location(location, limit=4, exclude_id=None):
+    """
+    Finds other popular spaces in the same location, excluding the current one.
+    """
+    query = {"location_city": location}
+    if exclude_id:
+        query["_id"] = {"$ne": ObjectId(exclude_id)}
+    # Popularity can be defined by reviews, bookings, etc.
+    # For now, we'll just get other spaces from the same location.
+    return list(spaces_collection.find(query).limit(limit))
+
+
+# --- Sample data utilities ---
 
 def _picsum(seed: str, w: int = 800, h: int = 600):
     """Sample chobi generate korar jonno helper function."""
@@ -147,117 +260,6 @@ def add_sample_spaces():
         spaces_collection.insert_many(sample_data)
         print(f"{len(sample_data)} sample spaces added.")
 
-
-def create_space(space_data):
-    """Database e ekta notun space toiri kore ebong save kore."""
-    space_data["created_at"] = datetime.utcnow()
-    return spaces_collection.insert_one(space_data)
-
-def get_space_by_id(space_id):
-    """Ekta nirdishto space ke tar unique ID diye database theke fetch kore."""
-    try:
-        return spaces_collection.find_one({"_id": ObjectId(space_id)})
-    except Exception:
-        return None
-
-def update_space(space_id, data):
-    """Ekta space er information update kore."""
-    return spaces_collection.update_one(
-        {"_id": ObjectId(space_id)},
-        {"$set": data}
-    )
-
-def delete_space(space_id):
-    """Ekta space ke database theke delete kore."""
-    return spaces_collection.delete_one({"_id": ObjectId(space_id)})
-
-def get_all_spaces():
-    """Database theke shob space fetch kore."""
-    return list(spaces_collection.find().sort("created_at", DESCENDING))
-
-def get_spaces_by_host(host_id):
-    """Ekjon nirdishto host er toiri kora shob space fetch kore."""
-    return list(spaces_collection.find({"host_id": host_id}).sort("created_at", DESCENDING))
-
-
-def filter_spaces(filters, user_profile=None):
-    """Bivinno criteria'r upor base kore space filter kore."""
-    query = {}
-    
-    # Text search for location
-    if filters.get('location'):
-        query['location_city'] = re.compile(filters['location'], re.IGNORECASE)
-        
-    # Price range filter
-    min_price = filters.get('min_price')
-    max_price = filters.get('max_price')
-    if min_price or max_price:
-        price_query = {}
-        if min_price:
-            try:
-                price_query['$gte'] = int(min_price)
-            except (ValueError, TypeError):
-                pass
-        if max_price:
-            try:
-                price_query['$lte'] = int(max_price)
-            except (ValueError, TypeError):
-                pass
-        if price_query:
-            query['price_per_night'] = price_query
-    
-    # Co-working space filter
-    if filters.get('coworking'):
-        query['has_coworking_space'] = True
-        
-    # Space type filter
-    if filters.get('space_type'):
-        query['space_type'] = filters['space_type']
-        
-    # Amenities filter (match all selected amenities)
-    if filters.get('amenities'):
-        query['amenities'] = {'$all': filters['amenities']}
-    
-    # Filter by a specific host
-    if filters.get('host_id'):
-        query['host_id'] = filters['host_id']
-
-    # Find matching spaces
-    spaces = list(spaces_collection.find(query))
-
-    # Sort results
-    sort_by = filters.get('sort_by')
-    if sort_by == 'price_asc':
-        spaces.sort(key=lambda x: x['price_per_night'])
-    elif sort_by == 'price_desc':
-        spaces.sort(key=lambda x: x['price_per_night'], reverse=True)
-    elif sort_by == 'best_match' and user_profile:
-        # 'Best Match' sorting logic
-        def calculate_score(space):
-            score = 0
-            # Budget match
-            if space['price_per_night'] <= user_profile.get('max_budget', 99999):
-                score += 20
-            # Wifi speed match
-            if space.get('wifi_speed_mbps', 0) >= user_profile.get('min_wifi_speed', 0):
-                score += 15
-            # Location preference could be added here if we stored it
-            return score
-        
-        spaces.sort(key=calculate_score, reverse=True)
-        
-    return spaces
-
-def get_popular_spaces_in_location(location, limit=4, exclude_id=None):
-    """
-    Finds other popular spaces in the same location, excluding the current one.
-    """
-    query = {"location_city": location}
-    if exclude_id:
-        query["_id"] = {"$ne": ObjectId(exclude_id)}
-    # Popularity can be defined by reviews, bookings, etc.
-    # For now, we'll just get other spaces from the same location.
-    return list(spaces_collection.find(query).limit(limit))
 
 def reset_sample_data():
     """Deletes and re-inserts sample data for testing."""

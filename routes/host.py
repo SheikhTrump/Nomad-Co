@@ -47,8 +47,8 @@ def create_host_profile():
         has_coworking_space = request.form.get("has_coworking_space") == "on"
 
         location_city = request.form["location_city"]
-        latitude = request.form["latitude"]
-        longitude = request.form["longitude"]
+        latitude = float(request.form["latitude"])
+        longitude = float(request.form["longitude"])
 
         photos = []
         if "photos" in request.files:

@@ -15,7 +15,7 @@ def verifications():
         own_path = host.get("verification", {}).get("own_photo")
         host["nid_exists"] = os.path.exists(nid_path) if nid_path else False
         host["own_exists"] = os.path.exists(own_path) if own_path else False
-    return render_template("admin_verification.html", pending_hosts=pending_hosts)
+    return render_template("dashboard.html", pending_hosts=pending_hosts)
 
 @admin_bp.route("/verify_host/<user_id>", methods=["POST"])
 def verify_host(user_id):
