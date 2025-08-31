@@ -98,33 +98,34 @@
         {% endif %}
         {% endwith %}
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-
+        <!-- Main Content -->
+        <div>
             <!-- Admin View -->
             {% if session.role == 'admin' %}
-            <a href="{{ url_for('analytics.dashboard') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-chart-line fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">View Analytics</h2>
-                <p class="text-gray-400 mt-2">Access user data, booking trends, and revenue reports.</p>
-            </a>
-            <div class="card rounded-xl p-6 block">
-                <a href="{{ url_for('community_bp.community_home') }}">
-                    <div class="flex items-center space-x-4">
-                        <div class="bg-teal-600 p-3 rounded-xl"></div>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Community Forum</h2>
-                            <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
-                            </p>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <a href="{{ url_for('analytics.dashboard') }}" class="card rounded-xl p-6 block">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-chart-line fa-lg"></i>
                     </div>
+                    <h2 class="text-xl font-bold text-white">View Analytics</h2>
+                    <p class="text-gray-400 mt-2">Access user data, booking trends, and revenue reports.</p>
                 </a>
+                <div class="card rounded-xl p-6 block">
+                    <a href="{{ url_for('community_bp.community_home') }}">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-teal-600 p-3 rounded-xl"></div>
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Community Forum</h2>
+                                <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
             <!-- Pending Host Verifications (full width) -->
-            <div class="col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="mt-8 text-2xl font-bold text-white">Pending Host Verifications</h2>
+            <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-8">
+                <h2 class="text-2xl font-bold text-white">Pending Host Verifications</h2>
                 {% if pending_hosts %}
                 {% for host in pending_hosts %}
                 <div class="card mb-3 p-3">
@@ -150,154 +151,177 @@
 
             <!-- Host View -->
             {% if session.role == 'host' %}
-            <!-- {% if user %} -->
-            {% if user and user.verification and user.verification.status == 'approved' %}
-            <!-- Show create space button -->
-            <a href="{{ url_for('host_profiles.create_host_profile') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-plus-circle fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">Create a Space</h2>
-                <p class="text-gray-400 mt-2">Add a new listing for travelers to discover and book.</p>
-            </a>
-            {% else %}
-            <!-- Show disabled create space card -->
-            <div class="card rounded-xl p-6 block opacity-50 cursor-not-allowed">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-plus-circle fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">Create a Space</h2>
-                <p class="text-gray-400 mt-2">You must be verified to create a space.</p>
-            </div>
-            {% endif %}
-            {% endif %}
-            <a href="{{ url_for('space_bp.get_my_spaces_route') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-home fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">My Spaces</h2>
-                <p class="text-gray-400 mt-2">View, manage, and edit all of your active listings.</p>
-            </a>
-            <a href="{{ url_for('payout.view_payouts') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-dollar-sign fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">My Payouts</h2>
-                <p class="text-gray-400 mt-2">Track your earnings and view your booking payment history.</p>
-            </a>
-            <div class="card rounded-xl p-6 block">
-                <a href="{{ url_for('community_bp.community_home') }}">
-                    <div class="flex items-center space-x-4 mb-4">
-                        <div class="bg-teal-600 p-3 rounded-xl flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-6a2 2 0 012-2h6m4 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2" />
-                            </svg>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column for actions -->
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {% if user and user.verification and user.verification.status == 'approved' %}
+                    <!-- Show create space button -->
+                    <a href="{{ url_for('host_profiles.create_host_profile') }}" class="card rounded-xl p-6 block">
+                        <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                            <i class="fas fa-plus-circle fa-lg"></i>
                         </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Community Forum</h2>
-                            <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
-                            </p>
+                        <h2 class="text-xl font-bold text-white">Create a Space</h2>
+                        <p class="text-gray-400 mt-2">Add a new listing for travelers to discover and book.</p>
+                    </a>
+                    {% else %}
+                    <!-- Show disabled create space card -->
+                    <div class="card rounded-xl p-6 block opacity-50 cursor-not-allowed">
+                        <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                            <i class="fas fa-plus-circle fa-lg"></i>
                         </div>
+                        <h2 class="text-xl font-bold text-white">Create a Space</h2>
+                        <p class="text-gray-400 mt-2">You must be verified to create a space.</p>
                     </div>
-                </a>
-            </div>
-            <!-- Host Verification Card -->
-            <div class="card rounded-xl p-6 block">
-                <div class="flex items-center space-x-4 mb-4">
-                    <div class="bg-green-600 p-3 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-id-card fa-lg text-white"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-white">Host Verification</h2>
-                        <p class="text-gray-400">Verify your identity to unlock hosting features.</p>
+                    {% endif %}
+                    <a href="{{ url_for('space_bp.get_my_spaces_route') }}" class="card rounded-xl p-6 block">
+                        <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                            <i class="fas fa-home fa-lg"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">My Spaces</h2>
+                        <p class="text-gray-400 mt-2">View, manage, and edit all of your active listings.</p>
+                    </a>
+                    <a href="{{ url_for('payout.view_payouts') }}" class="card rounded-xl p-6 block">
+                        <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">My Payouts</h2>
+                        <p class="text-gray-400 mt-2">Track your earnings and view your booking payment history.</p>
+                    </a>
+                    <div class="card rounded-xl p-6 block">
+                        <a href="{{ url_for('community_bp.community_home') }}">
+                            <div class="flex items-center space-x-4 mb-4">
+                                <div class="bg-teal-600 p-3 rounded-xl flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-6a2 2 0 012-2h6m4 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-white">Community Forum</h2>
+                                    <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 </div>
-                {% if not user.is_verified %}
-                {% if user.verification and user.verification.status == "pending" %}
-                <span class="badge bg-warning mt-4 px-3 py-1 rounded text-yellow-200 font-semibold">Waiting for
-                    verification...</span>
-                {% else %}
-                <form action="{{ url_for('host_profiles.verify_host') }}" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="nid_photo" required>
-                    <input type="file" name="own_photo" required>
-                    <button type="submit">Submit for Verification</button>
-                </form>
-                {% endif %}
-                {% else %}
-                <span class="badge bg-success mt-4 px-3 py-1 rounded text-white font-semibold">Verified Host</span>
-                {% endif %}
+                <!-- Right Column for verification -->
+                <div class="lg:col-span-1">
+                    <div class="card rounded-xl p-6 block">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="bg-green-600 p-3 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-id-card fa-lg text-white"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Host Verification</h2>
+                                <p class="text-gray-400">Verify your identity to unlock hosting features.</p>
+                            </div>
+                        </div>
+                        <!-- UNIFIED LOGIC BLOCK -->
+                        {% if user.verification.status == 'approved' %}
+                            <span class="badge bg-success mt-4 px-3 py-1 rounded text-white font-semibold">Verified Host</span>
+                        {% elif user.verification.status == 'pending' %}
+                            <span class="badge bg-warning mt-4 px-3 py-1 rounded text-yellow-200 font-semibold">Waiting for verification...</span>
+                        {% else %}
+                            <form action="{{ url_for('host_profiles.verify_host') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                                <div>
+                                    <label for="nid_photo" class="block text-sm font-medium text-gray-400">NID Photo</label>
+                                    <div class="mt-1 flex items-center">
+                                        <label class="cursor-pointer bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">
+                                            <i class="fas fa-upload mr-2"></i>Choose File
+                                            <input type="file" name="nid_photo" id="nid_photo" class="hidden" onchange="document.getElementById('nid_photo_label').textContent = this.files[0].name" required>
+                                        </label>
+                                        <span id="nid_photo_label" class="ml-3 text-gray-400">No file chosen</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="own_photo" class="block text-sm font-medium text-gray-400">Your Photo</label>
+                                    <div class="mt-1 flex items-center">
+                                        <label class="cursor-pointer bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">
+                                             <i class="fas fa-upload mr-2"></i>Choose File
+                                            <input type="file" name="own_photo" id="own_photo" class="hidden" onchange="document.getElementById('own_photo_label').textContent = this.files[0].name" required>
+                                        </label>
+                                        <span id="own_photo_label" class="ml-3 text-gray-400">No file chosen</span>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-black font-bold py-2 px-4 rounded-md">Submit for Verification</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endif %}
 
             <!-- Traveler View -->
             {% if session.role == 'traveler' %}
-            <a href="{{ url_for('space_filters.view_spaces') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-search-location fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">Find a Space</h2>
-                <p class="text-gray-400 mt-2">Explore our listings to find your next home away from home.</p>
-            </a>
-            <a href="{{ url_for('traveler_profiles.view_traveler_profile') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-user fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">My Profile</h2>
-                <p class="text-gray-400 mt-2">Update your personal information and travel preferences.</p>
-            </a>
-            <a href="{{ url_for('traveler_profiles.booking_history') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-history fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">My Bookings</h2>
-                <p class="text-gray-400 mt-2">View your past and upcoming booking history.</p>
-            </a>
-            <a href="{{ url_for('suggestions.view_suggestions') }}"
-                class="card rounded-xl p-6 block {% if session.get('new_suggestions') %}blinking-suggestion{% endif %}">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-lightbulb fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">Popular Spots</h2>
-                <p class="text-gray-400 mt-2">Discover places nearby that are popular with other nomads.</p>
-            </a>
-            <a href="{{ url_for('favorites.show_favorites') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-heart fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">My Favorites</h2>
-                <p class="text-gray-400 mt-2">See all the spaces you've saved for future trips.</p>
-            </a>
-            <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="card rounded-xl p-6 block">
-                <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
-                    <i class="fas fa-first-aid fa-lg"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">Emergency Contacts</h2>
-                <p class="text-gray-400 mt-2">Manage your list of emergency contacts for safety.</p>
-            </a>
-            <div class="bg-gray-800 rounded-2xl shadow-md p-6 hover:shadow-lg transition">
-                <a href="{{ url_for('community_bp.community_home') }}">
-                    <div class="flex items-center space-x-4">
-                        <div class="bg-teal-600 p-3 rounded-xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-6a2 2 0 012-2h6m4 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Community Forum</h2>
-                            <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
-                            </p>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <a href="{{ url_for('space_filters.view_spaces') }}" class="card rounded-xl p-6 block">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-search-location fa-lg"></i>
                     </div>
+                    <h2 class="text-xl font-bold text-white">Find a Space</h2>
+                    <p class="text-gray-400 mt-2">Explore our listings to find your next home away from home.</p>
                 </a>
+                <a href="{{ url_for('traveler_profiles.view_traveler_profile') }}" class="card rounded-xl p-6 block">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-user fa-lg"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">My Profile</h2>
+                    <p class="text-gray-400 mt-2">Update your personal information and travel preferences.</p>
+                </a>
+                <a href="{{ url_for('traveler_profiles.booking_history') }}" class="card rounded-xl p-6 block">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-history fa-lg"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">My Bookings</h2>
+                    <p class="text-gray-400 mt-2">View your past and upcoming booking history.</p>
+                </a>
+                <a href="{{ url_for('suggestions.view_suggestions') }}"
+                    class="card rounded-xl p-6 block {% if session.get('new_suggestions') %}blinking-suggestion{% endif %}">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-lightbulb fa-lg"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">Popular Spots</h2>
+                    <p class="text-gray-400 mt-2">Discover places nearby that are popular with other nomads.</p>
+                </a>
+                <a href="{{ url_for('favorites.show_favorites') }}" class="card rounded-xl p-6 block">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-heart fa-lg"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">My Favorites</h2>
+                    <p class="text-gray-400 mt-2">See all the spaces you've saved for future trips.</p>
+                </a>
+                <a href="{{ url_for('traveler_profiles.emergency_contacts') }}" class="card rounded-xl p-6 block">
+                    <div class="flex items-center justify-center card-icon w-12 h-12 rounded-lg mb-4">
+                        <i class="fas fa-first-aid fa-lg"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">Emergency Contacts</h2>
+                    <p class="text-gray-400 mt-2">Manage your list of emergency contacts for safety.</p>
+                </a>
+                <div class="bg-gray-800 rounded-2xl shadow-md p-6 hover:shadow-lg transition">
+                    <a href="{{ url_for('community_bp.community_home') }}">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-teal-600 p-3 rounded-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-6a2 2 0 012-2h6m4 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Community Forum</h2>
+                                <p class="text-gray-400">Discuss, share tips, and connect with other hosts and travelers.
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
-
             {% endif %}
         </div>
     </div>
 </body>
 
 </html>
+
