@@ -1,21 +1,140 @@
-NomadNest: Dependencies for My Traveler Profile Feature
-This file lists the files I need from the authentication module to get my Traveler Profile feature working correctly.
+# NomadNest - Co-living Space Booking Platform
 
-1. models/user.py
-Why I need it: This file defines how our user data is structured in the database. My profile page needs to read and write this data.
+NomadNest is a full-stack web application built with **Flask** and **MongoDB** that provides a platform for digital nomads and travelers to find and book co-living spaces across Bangladesh.
+It features distinct roles for **travelers**, **hosts**, and **administrators**, each with a dedicated dashboard and unique functionalities.
 
-2. routes/auth.py
-Why I need it: This handles the login, signup, and logout functionality. My profile page is protected and requires a user to be logged in.
+---
 
-3. templates/login.html
-Why I need it: This is the UI for the login page.
+## Core Features
 
-4. templates/signup.html
-Why I need it: This is the UI for creating a new account.
+### 👤 Traveler
 
-5. templates/dashboard.html
-Reason: This is the main landing page after a user logs in. My profile page links back to it.
+* **Browse & Filter**: Search for spaces with filters for location, price, and amenities.
+* **Booking System**: Secure booking for specific dates.
+* **User Profiles**: Manage personal details, preferences, and emergency contacts.
+* **Favorites**: Save favorite spaces for future trips.
+* **Reviews**: Leave ratings and feedback for stays.
+* **Booking History**: View and cancel past/upcoming bookings.
 
-Note: I have updated this file to include the link that directs travelers to my profile page.
+### 🏠 Host
 
-Summary: The user authentication system is the foundation that my profile feature is built on.
+* **Space Management**: Create, edit, and manage property listings.
+* **Host Verification**: Submit documents for admin approval before listing spaces.
+* **Payout Dashboard**: Track total earnings and detailed payout breakdowns.
+
+### 🛠️ Admin
+
+* **Analytics Dashboard**: Visual reports (via Chart.js) on revenue, user growth, popular locations, and top hosts.
+* **Host Verification Management**: Review and approve pending host verifications.
+
+---
+
+## Tech Stack
+
+**Backend**
+
+* Python 3
+* Flask
+* MongoDB
+* Pymongo
+* Werkzeug (password hashing)
+
+**Frontend**
+
+* HTML5
+* Tailwind CSS
+* JavaScript
+* Chart.js
+* Jinja2
+
+**Environment**
+
+* python-dotenv for environment variables
+
+---
+
+## 📂 Project Structure
+
+```
+nomadnest/
+│── app.py              # Main Flask app entry point
+│── requirements.txt    # Project dependencies
+│── models/             # Database models and logic
+│── routes/             # Flask Blueprints (routes and views)
+│── templates/          # Jinja2 HTML templates
+│── static/             # CSS, JS, and uploaded images
+```
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1. Prerequisites
+
+* Python 3.8+
+* MongoDB (local or MongoDB Atlas)
+
+### 2. Clone Repository
+
+```bash
+git clone https://github.com/your-username/nomadnest.git
+cd nomadnest
+```
+
+### 3. Create Virtual Environment
+
+**Windows**
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+**macOS / Linux**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 4. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+SECRET_KEY=your_super_secret_key_here
+MONGO_URI=mongodb://localhost:27017/nomadnest
+```
+
+### 6. Run the Application
+
+```bash
+python app.py
+```
+
+App will run at: [http://127.0.0.1:5001](http://127.0.0.1:5001)
+
+---
+
+## 💡 Usage
+
+* **First Run**: Visiting `/spaces` auto-populates the database with **26 sample spaces** and host users.
+* **Sign Up**: Choose to register as **Traveler** or **Host**.
+* **Admin Access**: Use credentials:
+
+  * Email: `admin@nomad.com`
+  * Password: `Black`
+
+---
+
+## 📌 License
+
+This project is for educational and development purposes.
+
+---
