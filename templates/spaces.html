@@ -1,18 +1,22 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find Your Space - NomadNest</title>
+    <!-- CSS and Font library gulo load kora hocche. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        /* Page er basic styling ekhane kora hoyeche. Dark theme er jonno. */
         body { 
             font-family: 'Inter', sans-serif;
             background-color: #0c5461; 
             color: #d1d5db;
         }
+        /* Navbar er style. Ektu transparent ebong blur effect deya. */
         .navbar {
             background-color: rgba(12, 84, 97, 0.8);
             backdrop-filter: blur(10px);
@@ -23,8 +27,9 @@
             border: 1px solid #374151;
         }
         .modal { transition: opacity 0.25s ease; }
-        body.modal-active { overflow-y: hidden; }
+        body.modal-active { overflow-y: hidden; } /* Modal open thakle page scroll bondho thakbe. */
         .star-color { color: #f59e0b; }
+        /* Form element gular (input, select) style. */
         .form-control, .form-select, .form-checkbox, .form-radio {
             background-color: #1f2937;
             border-color: #374151;
@@ -94,6 +99,7 @@
     </nav>
     
     <div class="container mx-auto px-4 py-8">
+        <!-- Page er header section. -->
         <div class="text-center">
             <h1 class="text-4xl font-bold text-white mb-2">
                 {% if is_my_spaces_page %}My Spaces{% else %}Find Your Next Home{% endif %}
@@ -103,13 +109,15 @@
             </p>
         </div>
 
-        <!-- Filter Form -->
+        <!-- Filter Form: Ei form ta diye user ra location, price, etc. diye space khujte parbe. -->
+        <!-- Form er action URL backend route e point korche. Method hocche GET, tai filter criteria gulo URL e dekhabe. -->
         <div class="bg-gray-800 p-6 rounded-lg shadow-md mb-8 border border-gray-700">
             <form action="{{ url_for('space_filters.view_spaces') if not is_my_spaces_page else url_for('space_bp.get_my_spaces_route') }}" method="GET">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                    <!-- Basic Filters -->
+                    <!-- Location Filter: Ekhane user location type korbe. -->
                     <div class="space-y-4">
                         <label for="location" class="block text-sm font-medium text-gray-400">Location</label>
+                        <!-- `value="{{ filters.location }}"` diye backend theke asha purono filter value ta dekhano hocche. -->
                         <input type="text" name="location" id="location" value="{{ filters.location }}" class="mt-1 block w-full rounded-md form-control" placeholder="e.g., Dhaka">
                         <div class="flex items-center pt-6">
                             <input type="checkbox" name="coworking" id="coworking" value="true" {% if filters.coworking %}checked{% endif %} class="h-4 w-4 rounded form-checkbox">
@@ -117,7 +125,7 @@
                         </div>
                     </div>
                     
-                    <!-- Price Range Filter -->
+                    <!-- Price Range Filter: Ekhane min ebong max price deya jabe. -->
                     <div class="space-y-4">
                         <label class="block text-sm font-medium text-gray-400">Price per Night (BDT)</label>
                         <div class="flex items-center space-x-2">
@@ -127,7 +135,7 @@
                         </div>
                     </div>
 
-                    <!-- Space Type Filter -->
+                    <!-- Space Type Filter: Radio button diye space er dhoron select kora jabe. -->
                     <div class="space-y-4">
                         <h4 class="text-sm font-medium text-gray-400">Space Type</h4>
                         <div class="space-y-2 pt-1">
@@ -146,10 +154,11 @@
                         </div>
                     </div>
 
-                    <!-- Amenities Filter -->
+                    <!-- Amenities Filter: Checkbox diye bivinno amenity select kora jabe. -->
                     <div class="space-y-4">
                         <h4 class="text-sm font-medium text-gray-400">Amenities</h4>
                         <div class="space-y-2 pt-1">
+                            <!-- `all_amenities` list er upor loop chaliye dynamically checkbox toiri kora hocche. -->
                             {% for amenity in all_amenities %}
                             <div class="flex items-center">
                                 <input type="checkbox" name="amenities" id="amenity_{{ loop.index }}" value="{{ amenity }}" {% if amenity in filters.amenities %}checked{% endif %} class="h-4 w-4 rounded form-checkbox">
@@ -159,10 +168,11 @@
                         </div>
                     </div>
                     
-                    <!-- Sort By Filter -->
+                    <!-- Sort By Filter: Dropdown diye result gulo sort kora jabe. -->
                     <div class="space-y-4">
                         <label for="sort_by" class="block text-sm font-medium text-gray-400">Sort By</label>
                         <select name="sort_by" id="sort_by" class="mt-1 block w-full rounded-md form-select">
+                            <!-- Traveler hole 'Best Match' option dekhabe. -->
                             {% if session.role == 'traveler' %}
                             <option value="best_match" {% if filters.sort_by == 'best_match' %}selected{% endif %}>Best Match</option>
                             {% endif %}
@@ -171,7 +181,7 @@
                         </select>
                     </div>
                 </div>
-                <!-- Submit Buttons -->
+                <!-- Submit Buttons: Filter apply korar ebong reset korar button. -->
                 <div class="mt-6 flex justify-end space-x-2">
                     <a href="{{ url_for('space_filters.view_spaces') if not is_my_spaces_page else url_for('space_bp.get_my_spaces_route') }}" class="inline-flex justify-center rounded-md border border-gray-600 bg-gray-700 py-2 px-4 text-sm font-medium text-gray-300 shadow-sm hover:bg-gray-600">
                         Reset Filters
@@ -183,10 +193,12 @@
             </form>
         </div>
 
-        <!-- Space Listings Grid -->
+        <!-- Space Listings Grid: Ekhane filter kora space gulo card hishebe dekhano hobe. -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Backend theke pathano `spaces` list er upor loop chaliye prottekta space er jonno ekta card toiri kora hocche. -->
             {% for space in spaces %}
             <div class="card rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 flex flex-col relative">
+                <!-- Card e click korle JavaScript er `openSpaceModal` function call hobe. -->
                 <div class="cursor-pointer" onclick="openSpaceModal('{{ space._id }}')">
                     <img class="h-56 w-full object-cover" src="{{ space.photos[0] if space.photos else 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image' }}" alt="{{ space.space_title }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1f2937/4b5563?text=No+Image';">
                     <div class="p-6">
@@ -220,9 +232,12 @@
                     </div>
                 </div>
                 
+                <!-- Card er footer e favorite/review/edit button gulo thakbe. -->
                 <div class="p-4 border-t border-gray-700 mt-auto flex justify-around items-center">
+                    <!-- Jodi user traveler hoy, tahole favorite ebong review option dekhabe. -->
                     {% if session.role == 'traveler' %}
                         <div>
+                            <!-- Jodi space ta already favorite kora thake, 'Favorited' dekhabe, noile 'Add to Favorites' dekhabe. -->
                             {% if space._id|string in favorites %}
                                 <a href="{{ url_for('favorites.remove_favorite', space_id=space._id) }}" class="text-red-500 font-semibold text-sm"><i class="fas fa-heart mr-1"></i>Favorited</a>
                             {% else %}
@@ -230,10 +245,12 @@
                             {% endif %}
                         </div>
                         <div>
+                            <!-- Review dewar jonno review modal open korar button. -->
                             <button onclick="openReviewModal('{{ space._id }}', '{{ space.space_title }}')" class="text-sm font-medium text-teal-400 hover:text-teal-200">
                                 <i class="fas fa-pen-alt mr-1"></i>Leave a Review
                             </button>
                         </div>
+                    <!-- Jodi host hoy ebong eta tar nijer space hoy, 'Edit' option dekhabe. -->
                     {% elif session.role == 'host' and space.host_id == session.user_id %}
                         <div class="text-center w-full">
                             <a href="{{ url_for('space_bp.edit_space', space_id=space._id) }}" class="text-sm font-medium text-teal-400 hover:text-teal-200"><i class="fas fa-edit mr-1"></i>Edit My Space</a>
@@ -245,17 +262,19 @@
         </div>
     </div>
 
-    <!-- Space Details Modal -->
+    <!-- Space Details Modal: Prothome hidden thakbe. Card e click korle JavaScript diye dekhano hobe. -->
     <div class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50" id="space-details-modal">
         <div class="modal-overlay absolute w-full h-full bg-gray-900/70" onclick="closeSpaceModal()"></div>
         <div class="modal-container bg-gray-800 w-11/12 md:max-w-3xl mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
             <div class="modal-content text-left">
+                <!-- Modal er chobi ebong close button. -->
                 <div class="relative">
                     <img id="modal-space-image" class="w-full h-64 object-cover rounded-t-lg" src="" alt="Space Image">
                     <div class="absolute top-0 right-0 p-4">
                         <button onclick="closeSpaceModal()" class="text-white hover:text-gray-300 text-2xl">&times;</button>
                     </div>
                 </div>
+                <!-- Modal er vitorer content. JavaScript diye dynamically change hobe. -->
                 <div class="p-6">
                     <h2 id="modal-space-name" class="text-3xl font-bold text-white"></h2>
                     <p id="modal-space-location" class="text-gray-400 mt-1"></p>
@@ -268,7 +287,7 @@
                         <h3 class="text-xl font-semibold text-white mb-4">Reviews</h3>
                         <div id="modal-reviews-container" class="space-y-4 max-h-64 overflow-y-auto"></div>
                     </div>
-                    <!-- FIXED: Button is now conditional and only shows for travelers -->
+                    <!-- Ei button ta shudhu traveler der jonno dekhabe. -->
                     <div class="mt-6 flex justify-end">
                         {% if session.role == 'traveler' %}
                         <a id="modal-book-button" href="#" class="btn-primary py-2 px-6 rounded-md transition">
@@ -281,13 +300,13 @@
         </div>
     </div>
 
-    <!-- Leave a Review Modal -->
+    <!-- Leave a Review Modal: Prothome hidden thakbe. Button e click korle dekhano hobe. -->
     <div class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50" id="review-modal">
         <div class="modal-overlay absolute w-full h-full bg-gray-900/70" onclick="closeReviewModal()"></div>
         <div class="modal-container bg-gray-800 w-11/12 md:max-w-4xl mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
             <div class="modal-content p-8 text-left">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Left Side: Form -->
+                    <!-- Bam Dike: Review dewar form. -->
                     <div>
                         <h1 class="text-3xl font-bold text-white text-center">Leave a Review</h1>
                         <p id="review-modal-space-name" class="text-center text-gray-400 mb-6"></p>
@@ -316,7 +335,7 @@
                             </div>
                         </form>
                     </div>
-                    <!-- Right Side: Live Preview -->
+                    <!-- Dan Dike: User form e ja input dibe, tar live preview. -->
                     <div class="card rounded-lg p-6">
                         <h2 class="text-2xl font-bold text-white text-center mb-4">Live Preview</h2>
                         <div class="border-t border-gray-700 pt-4">
@@ -336,30 +355,34 @@
     </div>
 
     <script>
+        // Modal gulo control korar jonno JavaScript code.
         const spaceDetailsModal = document.getElementById('space-details-modal');
         const reviewModal = document.getElementById('review-modal');
         
+        // Ei function ta space card e click korle call hoy.
         function openSpaceModal(spaceId) {
-            // Prevents modal from opening when clicking on a link or button inside the card
+            // Card er vitorer button e click korle jate modal open na hoy, shetar jonno check.
             if (event.target.closest('a') || event.target.closest('button')) return;
 
+            // API theke space er details fetch kora hocche. `/api/space/<spaceId>` ei route ta call hocche.
             fetch(`/api/space/${spaceId}`).then(res => res.json()).then(data => {
                 if (data.error) {
-                    // Using a custom message box instead of alert
                     console.error("Error fetching space data:", data.error);
                     return;
                 }
+                // Fetch kora data diye modal er content update kora hocche.
                 document.getElementById('modal-space-image').src = data.space.photos && data.space.photos.length > 0 ? data.space.photos[0] : 'https://placehold.co/600x400/1f2937/4b5563?text=No+Image';
                 document.getElementById('modal-space-name').textContent = data.space.space_title;
                 document.getElementById('modal-space-location').textContent = data.space.location_city;
                 document.getElementById('modal-space-price').innerHTML = `৳${data.space.price_per_night}<span class="text-sm font-normal text-gray-500">/night</span>`;
                 
                 const bookButton = document.getElementById('modal-book-button');
-                // Check if the button exists before setting its href (it won't for hosts)
+                // Check kora hocche button ta ache kina (host der jonno thakbe na).
                 if (bookButton) {
                     bookButton.href = `/space/${spaceId}`;
                 }
 
+                // Modal e star rating dekhano hocche.
                 const starsContainer = document.getElementById('modal-space-stars');
                 starsContainer.innerHTML = '';
                 if (data.review_count > 0) {
@@ -370,6 +393,7 @@
                     document.getElementById('modal-space-rating-text').textContent = 'No reviews yet';
                 }
 
+                // Review gulo dynamically toiri kore modal e dekhano hocche.
                 const reviewsContainer = document.getElementById('modal-reviews-container');
                 reviewsContainer.innerHTML = '';
                 if (data.reviews.length > 0) {
@@ -381,16 +405,19 @@
                     reviewsContainer.innerHTML = '<p class="text-gray-500">No reviews have been submitted for this space yet.</p>';
                 }
 
+                // Shob content set howar por modal ta visible kora hocche.
                 spaceDetailsModal.classList.remove('opacity-0', 'pointer-events-none');
                 document.body.classList.add('modal-active');
             });
         }
 
+        // Modal ta hide korar function.
         function closeSpaceModal() {
             spaceDetailsModal.classList.add('opacity-0', 'pointer-events-none');
             document.body.classList.remove('modal-active');
         }
 
+        // --- Review Modal er logic ---
         const reviewForm = document.getElementById('review-form');
         const reviewSubmitButton = document.getElementById('submit-button');
         const ratingInputs = reviewModal.querySelectorAll('input[name="rating"]');
@@ -401,26 +428,31 @@
         const previewStars = document.getElementById('preview-stars-container');
         const previewComment = document.getElementById('preview-comment');
 
+        // Review modal open korar function.
         function openReviewModal(spaceId, spaceName) {
-            reviewForm.action = `/review/new/${spaceId}`;
+            reviewForm.action = `/review/new/${spaceId}`; // Form er action URL set kora.
             document.getElementById('review-modal-space-name').textContent = `for ${spaceName}`;
-            reviewForm.reset();
+            reviewForm.reset(); // Ager shob input clear kora.
             previewContainer.classList.add('hidden');
-            validateAndPreview();
-            reviewModal.classList.remove('opacity-0', 'pointer-events-none');
+            validateAndPreview(); // Preview update kora.
+            reviewModal.classList.remove('opacity-0', 'pointer-events-none'); // Modal visible kora.
             document.body.classList.add('modal-active');
         }
 
+        // Review modal close korar function.
         function closeReviewModal() {
             reviewModal.classList.add('opacity-0', 'pointer-events-none');
             document.body.classList.remove('modal-active');
         }
 
+        // Ei function ta review form er input check kore ebong live preview update kore.
         function validateAndPreview() {
             const isRatingSelected = Array.from(ratingInputs).some(input => input.checked);
             const isCommentFilled = commentInput.value.trim() !== '';
+            // Rating ebong comment deya thakle submit button enable hobe.
             reviewSubmitButton.disabled = !(isRatingSelected && isCommentFilled);
 
+            // Live preview te rating dekhano.
             const selectedRating = reviewModal.querySelector('input[name="rating"]:checked');
             previewStars.innerHTML = '';
             if (selectedRating) {
@@ -428,7 +460,7 @@
                     previewStars.innerHTML += '<i class="fas fa-star"></i>';
                 }
             }
-
+            // Live preview te comment dekhano.
             if (isCommentFilled) {
                 previewComment.textContent = commentInput.value;
                 previewComment.classList.remove('italic');
@@ -438,9 +470,11 @@
             }
         }
 
+        // Input field gulate kono change hole `validateAndPreview` function call hobe.
         ratingInputs.forEach(input => input.addEventListener('change', validateAndPreview));
         commentInput.addEventListener('input', validateAndPreview);
-
+        
+        // Photo select korle tar preview dekhabe.
         photoInput.addEventListener('change', function() {
             const file = this.files[0];
             if (file) {
@@ -456,3 +490,4 @@
     
 </body>
 </html>
+

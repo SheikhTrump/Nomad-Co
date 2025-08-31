@@ -1,4 +1,5 @@
 <!-- templates\analytics.html -->
+<!-- Ei page ta hocche admin er jonno analytics dashboard. Ekhane platform er shob important data chart ebong card akare dekhano hoy -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,11 +7,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics Dashboard - NomadNest</title>
+    <!-- CSS and Font library gulo load kora hocche -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Chart bananor jonno Chart.js library load kora hocche -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
+        /* Page er basic styling ekhane kora hoyeche */
         body { 
             font-family: 'Inter', sans-serif;
             background-color: #0c5461; 
@@ -20,9 +25,12 @@
             background-color: #1f2937;
             border: 1px solid #374151;
         }
+        .stat-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(70, 224, 193, 0.1), 0 4px 6px -2px rgba(70, 224, 193, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .btn-nav {
             background-color: #374151;
@@ -34,9 +42,10 @@
     </style>
 </head>
 <body class="min-h-screen">
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         
-        <!-- Header Section -->
+        <!-- Header Section: Page er title ebong back button -->
         <div class="flex justify-between items-center mb-10">
             <div>
                 <h1 class="text-3xl font-bold text-white">NomadNest Analytics</h1>
@@ -47,38 +56,118 @@
             </a>
         </div>
 
-        <!-- Top Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
-            <div class="card rounded-xl p-6 text-center stat-card transition-transform duration-200">
-                <i class="fas fa-users fa-3x text-blue-400 mb-3"></i>
-                <h5 class="text-lg font-semibold text-gray-400">Total Users</h5>
+        <!-- Top Stats Row 1: Ekhane mukhho statistics gulo (total users, active users) card hishebe dekhano hocche -->
+        <!-- Data gulo backend theke 'user_data' ebong 'advanced_data' variable er maddhome ashche -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-blue-500 to-blue-700">
+                <i class="fas fa-users fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-blue-200">Total Users</h5>
                 <p class="text-5xl font-bold text-white mt-1">{{ user_data.total_users }}</p>
             </div>
-            <div class="card rounded-xl p-6 text-center stat-card transition-transform duration-200">
-                <i class="fas fa-book-open fa-3x text-green-400 mb-3"></i>
-                <h5 class="text-lg font-semibold text-gray-400">Total Bookings</h5>
-                <p class="text-5xl font-bold text-white mt-1">{{ booking_data.total_bookings }}</p>
+            <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-green-500 to-green-700">
+                <i class="fas fa-user-clock fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-green-200">Active Users (30d)</h5>
+                <p class="text-5xl font-bold text-white mt-1">{{ advanced_data.active_users }}</p>
             </div>
-            <div class="card rounded-xl p-6 text-center stat-card transition-transform duration-200">
-                <i class="fas fa-dollar-sign fa-3x text-yellow-400 mb-3"></i>
-                <h5 class="text-lg font-semibold text-gray-400">Total Revenue</h5>
-                <p class="text-5xl font-bold text-white mt-1">৳{{ "{:,.0f}".format(booking_data.total_revenue) }}</p>
+            <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-yellow-500 to-yellow-700">
+                <i class="fas fa-user-plus fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-yellow-200">New Users (This Month)</h5>
+                <p class="text-5xl font-bold text-white mt-1">{{ advanced_data.new_users_this_month }}</p>
+            </div>
+             <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-red-500 to-red-700">
+                <i class="fas fa-wallet fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-red-200">Total Revenue</h5>
+                <p class="text-5xl font-bold text-white mt-1">৳{{ "%.0f"|format(advanced_data.booking_stats.total_revenue) }}</p>
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- Top Stats Row 2: Ekhane aro kichu statistics (repeat booker rate, average stay) dekhano hocche -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+            <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-indigo-500 to-indigo-700">
+                <i class="fas fa-sync-alt fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-indigo-200">Repeat Booker Rate</h5>
+                <p class="text-5xl font-bold text-white mt-1">{{ "%.1f"|format(advanced_data.repeat_booker_rate) }}<span class="text-2xl">%</span></p>
+            </div>
+             <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-teal-500 to-teal-700">
+                <i class="fas fa-hand-holding-usd fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-teal-200">Avg. Booking Value</h5>
+                <p class="text-5xl font-bold text-white mt-1">
+                    ৳{{ "%.0f"|format(advanced_data.booking_stats.total_revenue / advanced_data.booking_stats.total_bookings) if advanced_data.booking_stats.total_bookings else 'N/A' }}
+                </p>
+            </div>
+            <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-cyan-500 to-cyan-700">
+                <i class="fas fa-calendar-check fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-cyan-200">Avg. Lead Time</h5>
+                <p class="text-5xl font-bold text-white mt-1">
+                    {{ "%.1f"|format(advanced_data.booking_stats.total_lead_time / advanced_data.booking_stats.total_bookings) if advanced_data.booking_stats.total_bookings else 'N/A' }}
+                    <span class="text-2xl">days</span>
+                </p>
+            </div>
+            <div class="card rounded-xl p-6 text-center stat-card bg-gradient-to-br from-purple-500 to-purple-700">
+                <i class="fas fa-clock fa-3x text-white mb-3"></i>
+                <h5 class="text-lg font-semibold text-purple-200">Avg. Stay</h5>
+                <p class="text-5xl font-bold text-white mt-1">
+                    {{ "%.1f"|format(advanced_data.booking_stats.total_duration / advanced_data.booking_stats.total_bookings) if advanced_data.booking_stats.total_bookings else 'N/A' }}
+                    <span class="text-2xl">days</span>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Top Locations: Shobcheye beshi space ache emon top 3ta location dekhano hocche -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            {% for location in advanced_data.top_locations %}
+            <div class="card rounded-xl p-6 flex items-center space-x-4">
+                <div class="text-3xl font-bold text-gray-500">#{{ loop.index }}</div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">{{ location._id }}</h3>
+                    <p class="text-gray-400">{{ location.space_count }} spaces</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Charts Section: Ekhane canvas element gulo hocche chart er placeholder. JavaScript diye ekhanei chart toiri hobe -->
+         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <div class="card rounded-xl p-6">
+                <h5 class="text-xl font-bold text-white mb-4">Revenue by Location</h5>
+                <canvas id="revenueLocationChart"></canvas>
+            </div>
+            <div class="card rounded-xl p-6">
+                <h5 class="text-xl font-bold text-white mb-4">Most Booked Spaces</h5>
+                <canvas id="mostBookedChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <div class="card rounded-xl p-6">
+                <h5 class="text-xl font-bold text-white mb-4">Top 5 Spaces by Rating</h5>
+                <canvas id="topSpacesChart"></canvas>
+            </div>
+            <div class="card rounded-xl p-6">
+                <h5 class="text-xl font-bold text-white mb-4">Most Popular Amenities</h5>
+                <canvas id="popularAmenitiesChart"></canvas>
+            </div>
+        </div>
+        
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
             <div class="card rounded-xl p-6">
                 <h5 class="text-xl font-bold text-white mb-4">Users by Role</h5>
                 <canvas id="userRoleChart"></canvas>
             </div>
             <div class="card rounded-xl p-6">
-                <h5 class="text-xl font-bold text-white mb-4">Bookings by City</h5>
-                <canvas id="bookingsByCityChart"></canvas>
+                 <h5 class="text-xl font-bold text-white mb-4">Booking Status</h5>
+                 <canvas id="cancellationChart"></canvas>
             </div>
         </div>
 
-        <!-- Recent Activity Tables -->
+        <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="card rounded-xl p-6">
+                <h5 class="text-xl font-bold text-white mb-4">Top 5 Hosts by Revenue</h5>
+                <canvas id="topHostsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Activity Tables: Ekhane shesh kichu signup ebong booking er list dekhano hocche -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="card rounded-xl p-6">
                 <h5 class="text-xl font-bold text-white mb-4">Recent Signups</h5>
@@ -113,68 +202,150 @@
                 </div>
             </div>
         </div>
+
     </div>
 
     <script>
-        // Data from Flask for the charts
+        // Backend theke pathano data gulo JavaScript variable e rakha hocche
+        // `tojson | safe` filter ta Python object ke valid JSON string e convert kore
         const userData = {{ user_data | tojson | safe }};
         const bookingData = {{ booking_data | tojson | safe }};
+        const advancedData = {{ advanced_data | tojson | safe }};
 
-        // Chart.js Global Config for dark theme
-        Chart.defaults.color = 'rgba(209, 213, 219, 0.7)'; // text-gray-300 with opacity
-        Chart.defaults.borderColor = 'rgba(55, 65, 81, 0.5)'; // border-gray-700 with opacity
+        // Chart er default color set kora hocche dark theme er jonno
+        Chart.defaults.color = 'rgba(209, 213, 219, 0.7)';
+        Chart.defaults.borderColor = 'rgba(55, 65, 81, 0.5)';
 
-        // User Role Chart (Doughnut Chart)
-        const userRoleCtx = document.getElementById('userRoleChart').getContext('2d');
-        new Chart(userRoleCtx, {
+        // Revenue by Location Chart (Doughnut)
+        const revenueLocationCtx = document.getElementById('revenueLocationChart').getContext('2d');
+        new Chart(revenueLocationCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Travelers', 'Hosts'],
+                labels: advancedData.revenue_by_location.map(d => d._id),
                 datasets: [{
-                    label: 'User Roles',
-                    data: [userData.traveler_count, userData.host_count],
-                    backgroundColor: ['#60a5fa', '#34d399'], // blue-400, green-400
-                    borderColor: '#1f2937', // card background
+                    data: advancedData.revenue_by_location.map(d => d.total_revenue),
+                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'],
+                    borderColor: '#1f2937',
                     borderWidth: 4
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            font: { size: 14 }
-                        }
-                    }
-                }
-            }
+            options: { responsive: true, plugins: { legend: { position: 'top' } } }
         });
 
-        // Bookings by City Chart (Bar Chart)
-        const bookingsByCityCtx = document.getElementById('bookingsByCityChart').getContext('2d');
-        new Chart(bookingsByCityCtx, {
+        // Most Booked Spaces Chart (Bar)
+        const mostBookedCtx = document.getElementById('mostBookedChart').getContext('2d');
+        new Chart(mostBookedCtx, {
             type: 'bar',
             data: {
-                labels: Object.keys(bookingData.bookings_by_city),
+                labels: advancedData.most_booked_spaces.map(d => d._id),
                 datasets: [{
-                    label: 'Number of Bookings',
-                    data: Object.values(bookingData.bookings_by_city),
-                    backgroundColor: 'rgba(250, 204, 21, 0.5)', // yellow-400 with opacity
-                    borderColor: '#facc15', // yellow-400
+                    label: 'Total Bookings',
+                    data: advancedData.most_booked_spaces.map(d => d.count),
+                    backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                    borderColor: '#6366f1',
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
-                indexAxis: 'y', // Horizontal bars
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: { beginAtZero: true, grid: { color: 'rgba(55, 65, 81, 0.5)' } },
-                    y: { grid: { display: false } }
-                }
+                indexAxis: 'y', // Bar chart take horizontal kore dekhabe
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // User Role Chart (Doughnut)
+        const userRoleCtx2 = document.getElementById('userRoleChart').getContext('2d');
+        new Chart(userRoleCtx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Travelers', 'Hosts'],
+                datasets: [{
+                    data: [userData.traveler_count, userData.host_count],
+                    backgroundColor: ['#60a5fa', '#34d399'],
+                    borderColor: '#1f2937',
+                    borderWidth: 4
+                }]
+            },
+            options: { responsive: true }
+        });
+        
+        // Cancellation Rate Chart (Pie)
+        const cancellationCtx = document.getElementById('cancellationChart').getContext('2d');
+        const confirmedBookings = advancedData.booking_stats.total_bookings - advancedData.booking_stats.cancelled_bookings;
+        new Chart(cancellationCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Confirmed', 'Cancelled'],
+                datasets: [{
+                    data: [confirmedBookings, advancedData.booking_stats.cancelled_bookings],
+                    backgroundColor: ['#34d399', '#f87171'],
+                    borderColor: '#1f2937',
+                    borderWidth: 4
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        // Top 5 Hosts Chart (Bar)
+        const topHostsCtx = document.getElementById('topHostsChart').getContext('2d');
+        new Chart(topHostsCtx, {
+            type: 'bar',
+            data: {
+                labels: advancedData.top_hosts.map(d => d._id),
+                datasets: [{
+                    label: 'Total Revenue (BDT)',
+                    data: advancedData.top_hosts.map(d => d.total_revenue),
+                    backgroundColor: 'rgba(192, 132, 252, 0.5)',
+                    borderColor: '#c084fc',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Top Spaces by Rating Chart (Bar)
+        const topSpacesCtx = document.getElementById('topSpacesChart').getContext('2d');
+        new Chart(topSpacesCtx, {
+            type: 'bar',
+            data: {
+                labels: advancedData.top_spaces.map(d => d._id),
+                datasets: [{
+                    label: 'Average Rating',
+                    data: advancedData.top_spaces.map(d => d.average_rating),
+                    backgroundColor: 'rgba(236, 72, 153, 0.5)',
+                    borderColor: '#ec4899',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, max: 5 } } // Rating 0 theke 5 er moddhe thakbe
+            }
+        });
+
+        // Popular Amenities Chart (Bar)
+        const popularAmenitiesCtx = document.getElementById('popularAmenitiesChart').getContext('2d');
+        new Chart(popularAmenitiesCtx, {
+            type: 'bar',
+            data: {
+                labels: advancedData.popular_amenities.map(d => d._id),
+                datasets: [{
+                    label: 'Number of Listings',
+                    data: advancedData.popular_amenities.map(d => d.count),
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } }
             }
         });
     </script>
